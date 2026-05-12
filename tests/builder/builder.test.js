@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { Window } from "happy-dom";
 
-import { createSurveyBuilder } from "../../src/modules/builder/index.js";
+import { createSurveyBuilder } from "../../src/builder/index.js";
 
 test("createSurveyBuilder mounts survey metadata and emits normalized changes", () => {
   const target = setupDom();
