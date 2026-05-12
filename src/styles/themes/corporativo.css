@@ -1,0 +1,114 @@
+:root,
+html[data-theme="corporativo"] {
+  --ps-bg: #f4f8f7;
+  --ps-surface: #ffffff;
+  --ps-surface-soft: #edf5f2;
+  --ps-ink: #0e2220;
+  --ps-muted: #566b68;
+  --ps-line: #cfe0da;
+  --ps-primary: #0f7667;
+  --ps-primary-ink: #f8fffe;
+  --ps-secondary: #1f4f8c;
+  --ps-accent: #d89b35;
+  --ps-accent-2: #7cc7b5;
+  --ps-danger: #b13d4f;
+  --ps-canvas-bg: linear-gradient(180deg, #f7fbfa 0%, #eef6f3 100%);
+  --ps-panel-bg: color-mix(in srgb, var(--ps-surface) 92%, var(--ps-bg));
+  --ps-section-bg: color-mix(in srgb, var(--ps-surface-soft) 54%, transparent);
+  --ps-question-bg: color-mix(in srgb, var(--ps-surface) 84%, transparent);
+  --ps-inset-bg: color-mix(in srgb, var(--ps-bg) 76%, var(--ps-surface));
+  --ps-divider: color-mix(in srgb, var(--ps-line) 78%, transparent);
+  --ps-ornament: linear-gradient(90deg, var(--ps-primary), var(--ps-secondary), var(--ps-accent));
+  --ps-warning-bg: #fff4db;
+  --ps-error-bg: #fff1f3;
+  --ps-radius: 12px;
+  --ps-radius-lg: 16px;
+  --ps-radius-control: 11px;
+  --ps-radius-pill: 999px;
+  --ps-border-width: 1px;
+  --ps-card-border: var(--ps-border-width) solid color-mix(in srgb, var(--ps-line) 92%, #ffffff);
+  --ps-card-bg: linear-gradient(180deg, #ffffff, #f5fbf9);
+  --ps-card-shadow: 0 18px 45px rgb(11 45 39 / 11%);
+  --ps-shadow: var(--ps-card-shadow);
+  --ps-shadow-soft: 0 10px 24px rgb(15 118 103 / 24%);
+  --ps-field-bg: rgb(255 255 255 / 94%);
+  --ps-gradient-primary: linear-gradient(135deg, var(--ps-primary) 0%, var(--ps-secondary) 100%);
+  --ps-focus-ring: 0 0 0 4px color-mix(in srgb, var(--ps-primary) 14%, transparent);
+  --ps-space-1: 4px;
+  --ps-space-2: 8px;
+  --ps-space-3: 12px;
+  --ps-space-4: 16px;
+  --ps-space-5: 18px;
+  --ps-space-6: 24px;
+  --ps-control-min-height: 42px;
+  --ps-panel-top: 116px;
+  --ps-panel-offset: 18px;
+  --ps-panel-max-block: calc(100vh - 130px);
+  --ps-toolbox-width: min(310px, 30vw);
+  --ps-properties-width: min(420px, 38vw);
+  --ps-preview-max-width: 1080px;
+  --ps-preview-margin-start: clamp(330px, 22vw, 390px);
+  --ps-preview-margin-end: clamp(430px, 28vw, 480px);
+  color-scheme: light;
+  color: var(--ps-ink);
+}
+
+html[data-theme="corporativo"][data-mode="dark"],
+html[data-theme="corporativo"][data-mode="darkless"] {
+  --ps-bg: #0f1718;
+  --ps-surface: #162122;
+  --ps-surface-soft: #203030;
+  --ps-ink: #e6f4f1;
+  --ps-muted: #9eb7b2;
+  --ps-line: #344d4b;
+  --ps-primary: #79d8c7;
+  --ps-primary-ink: #09201c;
+  --ps-secondary: #8eb6ff;
+  --ps-accent: #f4be62;
+  --ps-accent-2: #4fd1b4;
+  --ps-danger: #ff8ea4;
+  --ps-canvas-bg: linear-gradient(180deg, #10191a 0%, #0b1213 100%);
+  --ps-panel-bg: color-mix(in srgb, var(--ps-surface) 90%, #050809);
+  --ps-section-bg: color-mix(in srgb, var(--ps-surface-soft) 42%, transparent);
+  --ps-question-bg: color-mix(in srgb, var(--ps-surface) 78%, transparent);
+  --ps-inset-bg: color-mix(in srgb, var(--ps-bg) 82%, #000000);
+  --ps-divider: color-mix(in srgb, var(--ps-line) 72%, transparent);
+  --ps-ornament: linear-gradient(90deg, var(--ps-primary), var(--ps-secondary), var(--ps-accent));
+  --ps-warning-bg: #3b2f12;
+  --ps-error-bg: #3a1820;
+  --ps-radius: 12px;
+  --ps-radius-lg: 16px;
+  --ps-radius-control: 11px;
+  --ps-radius-pill: 999px;
+  --ps-border-width: 1px;
+  --ps-card-border: var(--ps-border-width) solid color-mix(in srgb, var(--ps-line) 88%, #000000);
+  --ps-card-bg: linear-gradient(180deg, #162122, #11191a);
+  --ps-card-shadow: 0 24px 58px rgb(0 0 0 / 38%);
+  --ps-shadow: var(--ps-card-shadow);
+  --ps-shadow-soft: 0 10px 24px rgb(121 216 199 / 20%);
+  --ps-field-bg: color-mix(in srgb, var(--ps-surface) 82%, #0b0e15);
+  --ps-gradient-primary: linear-gradient(135deg, var(--ps-primary) 0%, var(--ps-secondary) 100%);
+  --ps-focus-ring: 0 0 0 4px color-mix(in srgb, var(--ps-primary) 18%, transparent);
+  --ps-space-1: 4px;
+  --ps-space-2: 8px;
+  --ps-space-3: 12px;
+  --ps-space-4: 16px;
+  --ps-space-5: 18px;
+  --ps-space-6: 24px;
+  --ps-control-min-height: 42px;
+  --ps-panel-top: 116px;
+  --ps-panel-offset: 18px;
+  --ps-panel-max-block: calc(100vh - 130px);
+  --ps-toolbox-width: min(310px, 30vw);
+  --ps-properties-width: min(420px, 38vw);
+  --ps-preview-max-width: 1080px;
+  --ps-preview-margin-start: clamp(330px, 22vw, 390px);
+  --ps-preview-margin-end: clamp(430px, 28vw, 480px);
+  color-scheme: dark;
+}
+
+html[data-theme="corporativo"][data-mode="darkless"] {
+  --ps-card-bg: #182425;
+  --ps-card-shadow: 0 10px 26px rgb(0 0 0 / 24%);
+  --ps-shadow: var(--ps-card-shadow);
+}

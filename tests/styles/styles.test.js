@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { Window } from "happy-dom";
 
-import { createSurveyRenderer } from "../../src/modules/renderer/index.js";
-import { bootstrapPreset, bulmaPreset, createUiPreset, daisyPreset, plainPreset } from "../../src/assets/styles/index.js";
+import { createSurveyRenderer } from "../../src/renderer/index.js";
+import { bootstrapPreset, bulmaPreset, createUiPreset, daisyPreset, plainPreset } from "../../src/styles/index.js";
 
 test("framework presets provide renderer class contracts without dependencies", () => {
   assert.match(plainPreset.root, /ps-renderer/);
@@ -48,7 +48,7 @@ test("presets can be passed directly to the renderer", () => {
 });
 
 test("public stylesheet preserves original typography and import behavior", () => {
-  const stylesheet = readFileSync(new URL("../../src/assets/styles/plainsurvey.css", import.meta.url), "utf8");
+  const stylesheet = readFileSync(new URL("../../src/styles/plainsurvey.css", import.meta.url), "utf8");
   const packageJson = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8"));
 
   assert.match(stylesheet, /fonts\.googleapis\.com/);
@@ -58,8 +58,8 @@ test("public stylesheet preserves original typography and import behavior", () =
 });
 
 test("public stylesheet keeps builder modern layout centered with movable sidebars", () => {
-  const stylesheet = readFileSync(new URL("../../src/assets/styles/plainsurvey.css", import.meta.url), "utf8");
-  const layoutStylesheet = readFileSync(new URL("../../src/assets/styles/layouts.css", import.meta.url), "utf8");
+  const stylesheet = readFileSync(new URL("../../src/styles/plainsurvey.css", import.meta.url), "utf8");
+  const layoutStylesheet = readFileSync(new URL("../../src/styles/layouts.css", import.meta.url), "utf8");
 
   assert.match(stylesheet, /\.ps-builder > \.ps-builder-panel > \.ps-builder-panel\s*\{/);
   assert.match(stylesheet, /@import url\("\.\/layouts\.css"\)/);
@@ -73,7 +73,7 @@ test("all bundled themes expose extended builder surface tokens", () => {
   const themes = ["corporativo", "academia", "producto", "atelier", "nexus", "catppuccin", "obsidian"];
 
   for (const theme of themes) {
-    const stylesheet = readFileSync(new URL(`../../src/assets/styles/themes/${theme}.css`, import.meta.url), "utf8");
+    const stylesheet = readFileSync(new URL(`../../src/styles/themes/${theme}.css`, import.meta.url), "utf8");
     assert.match(stylesheet, /--ps-accent:/, theme);
     assert.match(stylesheet, /--ps-accent-2:/, theme);
     assert.match(stylesheet, /--ps-canvas-bg:/, theme);

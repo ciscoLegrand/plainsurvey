@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { Window } from "happy-dom";
 
-import { createSurveyRenderer } from "../../src/modules/renderer/index.js";
+import { createSurveyRenderer } from "../../src/renderer/index.js";
 
 test("createSurveyRenderer mounts a survey and emits changes", () => {
   const { target } = setupDom();
