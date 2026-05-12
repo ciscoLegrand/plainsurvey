@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { createSurveyFromPrompt, generateSurveyWithAi } from "../../src/modules/ai/index.js";
+import { createSurveyFromPrompt, generateSurveyWithAi } from "../../src/ai/index.js";
 
 test("generateSurveyWithAi returns recoverable draft when provider is unavailable", async () => {
   const result = await generateSurveyWithAi({ prompt: "customer onboarding" });
