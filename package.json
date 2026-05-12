@@ -1,43 +1,60 @@
 {
   "name": "plainsurvey",
-  "version": "0.1.0-rc.2",
+  "version": "0.1.0-rc1",
   "description": "Framework-agnostic survey core, renderer, builder and analytics library.",
   "type": "module",
   "private": false,
   "license": "MIT",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "sideEffects": [
     "**/*.css"
   ],
   "exports": {
     ".": {
-      "import": "./src/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./core": {
-      "import": "./src/core/index.js"
-    },
-    "./renderer": {
-      "import": "./src/modules/renderer/index.js"
+      "import": "./dist/core/index.js",
+      "require": "./dist/core/index.cjs"
     },
     "./builder": {
-      "import": "./src/modules/builder/index.js"
+      "import": "./dist/builder/index.js",
+      "require": "./dist/builder/index.cjs"
     },
-    "./styles": {
-      "import": "./src/assets/styles/index.js"
+    "./renderer": {
+      "import": "./dist/renderer/index.js",
+      "require": "./dist/renderer/index.cjs"
     },
-    "./styles/plainsurvey.css": "./src/assets/styles/plainsurvey.css",
-    "./styles/themes.css": "./src/assets/styles/themes.css",
-    "./styles/skins.css": "./src/assets/styles/skins.css",
-    "./styles/layouts.css": "./src/assets/styles/layouts.css",
-    "./styles/themes/*.css": "./src/assets/styles/themes/*.css",
+    "./preview": {
+      "import": "./dist/preview/index.js",
+      "require": "./dist/preview/index.cjs"
+    },
     "./analytics": {
-      "import": "./src/modules/analytics/index.js"
+      "import": "./dist/analytics/index.js",
+      "require": "./dist/analytics/index.cjs"
+    },
+    "./analysis": {
+      "import": "./dist/analysis/index.js",
+      "require": "./dist/analysis/index.cjs"
     },
     "./ai": {
-      "import": "./src/modules/ai/index.js"
-    }
+      "import": "./dist/ai/index.js",
+      "require": "./dist/ai/index.cjs"
+    },
+    "./styles": {
+      "import": "./dist/styles/index.js",
+      "require": "./dist/styles/index.cjs"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./styles/plainsurvey.css": "./dist/styles/plainsurvey.css",
+    "./styles/themes.css": "./dist/styles/themes.css",
+    "./styles/skins.css": "./dist/styles/skins.css",
+    "./styles/layouts.css": "./dist/styles/layouts.css",
+    "./styles/themes/*.css": "./dist/styles/themes/*.css"
   },
   "files": [
-    "src",
     "dist",
     "README.md",
     "CHANGELOG.md",
@@ -55,9 +72,9 @@
     "happy-dom": "^20.0.11"
   },
   "scripts": {
-    "build": "bun build ./src/index.js --outdir ./dist --target browser",
-    "dev": "npm --prefix ../examples/react run dev",
-    "test": "node --loader ./scripts/node-alias-loader.mjs --test"
+    "build": "node ./scripts/build.mjs",
+    "prepublishOnly": "npm run build",
+    "test": "node ./scripts/build.mjs && node --test"
   },
   "engines": {
     "node": ">=20"
