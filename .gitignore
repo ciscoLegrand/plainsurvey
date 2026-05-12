@@ -1,0 +1,35 @@
+# Dependencies, builds and local machine files
+/node_modules/
+/coverage/
+/dist/
+/.vite/
+/.env
+/.env.*
+!/.env.example
+/npm-debug.log*
+/yarn-debug.log*
+/yarn-error.log*
+/pnpm-debug.log*
+/.DS_Store
+/*.log
+/*.tmp
+
+# Lockfiles not used in this repository (Bun lockfile is tracked)
+/package-lock.json
+/yarn.lock
+
+# Local planning notes removed from git tracking
+/library-plan.md
+
+# Existing non-library project artifacts kept out of tracking
+/.devcontainer/
+/.dockerignore
+/Dockerfile
+/config/
+/conversation.md
+/docs/builder.md
+/docs/builder/
+/index.html
+/pnpm-lock.yaml
+/styles/
+.agents

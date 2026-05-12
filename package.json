@@ -1,0 +1,65 @@
+{
+  "name": "plainsurvey",
+  "version": "0.1.0-rc.2",
+  "description": "Framework-agnostic survey core, renderer, builder and analytics library.",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "import": "./src/index.js"
+    },
+    "./core": {
+      "import": "./src/core/index.js"
+    },
+    "./renderer": {
+      "import": "./src/modules/renderer/index.js"
+    },
+    "./builder": {
+      "import": "./src/modules/builder/index.js"
+    },
+    "./styles": {
+      "import": "./src/assets/styles/index.js"
+    },
+    "./styles/plainsurvey.css": "./src/assets/styles/plainsurvey.css",
+    "./styles/themes.css": "./src/assets/styles/themes.css",
+    "./styles/skins.css": "./src/assets/styles/skins.css",
+    "./styles/layouts.css": "./src/assets/styles/layouts.css",
+    "./styles/themes/*.css": "./src/assets/styles/themes/*.css",
+    "./analytics": {
+      "import": "./src/modules/analytics/index.js"
+    },
+    "./ai": {
+      "import": "./src/modules/ai/index.js"
+    }
+  },
+  "files": [
+    "src",
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "@atlaskit/pragmatic-drag-and-drop": "^1.8.1",
+    "@mlc-ai/web-llm": "^0.2.83",
+    "jsonrepair": "^3.13.1"
+  },
+  "devDependencies": {
+    "@atlaskit/pragmatic-drag-and-drop": "^1.8.1",
+    "@mlc-ai/web-llm": "^0.2.83",
+    "jsonrepair": "^3.13.1",
+    "happy-dom": "^20.0.11"
+  },
+  "scripts": {
+    "build": "bun build ./src/index.js --outdir ./dist --target browser",
+    "dev": "npm --prefix ../examples/react run dev",
+    "test": "node --loader ./scripts/node-alias-loader.mjs --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
