@@ -12,9 +12,9 @@ export function createSurveyAiChatbot(options = {}) {
     async initialize() {
       return provider?.initialize?.() || { runtime: "custom" };
     },
-    async sendMessage(message, context = {}) {
+    async sendMessage(message, context = {}, hooks = {}) {
       history.push({ role: "user", content: message });
-      const reply = await provider.chat(buildMessages(history, context, options));
+      const reply = await provider.chat(buildMessages(history, context, options), hooks);
       history.push({ role: "assistant", content: reply });
       return reply;
     },

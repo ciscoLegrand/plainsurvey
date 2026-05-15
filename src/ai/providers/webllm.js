@@ -6,20 +6,59 @@ export function createWebLLMProvider(options = {}) {
       await runtime.ensureEngine();
       return runtime.state();
     },
-    async generateSurvey({ prompt }) {
+    async generateSurvey({ prompt, onChunk }) {
       const engine = await runtime.ensureEngine();
+
+      if (typeof onChunk === "function") {
+        const stream = await engine.chat.completions.create({
+          messages: surveyPromptMessages(prompt, options),
+          temperature: options.temperature ?? 0.2,
+          stream: true
+        });
+
+        let streamedContent = "";
+        for await (const chunk of stream) {
+          const delta = chunk?.choices?.[0]?.delta?.content || "";
+          if (!delta) continue;
+          streamedContent += delta;
+          onChunk(delta, streamedContent);
+        }
+
+        return parseSurveyPayload(streamedContent, options.jsonrepair);
+      }
+
       const completion = await engine.chat.completions.create({
         messages: surveyPromptMessages(prompt, options),
         temperature: options.temperature ?? 0.2
       });
       return parseSurveyPayload(completion?.choices?.[0]?.message?.content || "", options.jsonrepair);
     },
-    async chat(messages = []) {
+    async chat(messages = [], chatOptions = {}) {
       const engine = await runtime.ensureEngine();
-      const completion = await engine.chat.completions.create({
+
+      const request = {
         messages,
-        temperature: options.temperature ?? 0.4
-      });
+        temperature: chatOptions.temperature ?? options.temperature ?? 0.4
+      };
+
+      if (typeof chatOptions.onChunk === "function") {
+        const stream = await engine.chat.completions.create({
+          ...request,
+          stream: true
+        });
+
+        let streamedContent = "";
+        for await (const chunk of stream) {
+          const delta = chunk?.choices?.[0]?.delta?.content || "";
+          if (!delta) continue;
+          streamedContent += delta;
+          chatOptions.onChunk(delta, streamedContent, chunk);
+        }
+
+        return streamedContent;
+      }
+
+      const completion = await engine.chat.completions.create(request);
       return completion?.choices?.[0]?.message?.content || "";
     }
   };
@@ -27,6 +66,7 @@ export function createWebLLMProvider(options = {}) {
 
 function createRuntime(options) {
   let enginePromise;
+  let selectedModel = options.model || null;
 
   async function loadWebLLM() {
     if (options.webllm) return options.webllm;
@@ -41,7 +81,10 @@ function createRuntime(options) {
             throw new Error("WebGPU is required for the local AI runtime.");
           }
           const webllm = await loadWebLLM();
-          const engine = await webllm.CreateMLCEngine(options.model || "Llama-3.2-3B-Instruct-q4f16_1", {
+          const appConfig = options.appConfig || webllm.prebuiltAppConfig;
+          selectedModel = resolveModelId(options.model, appConfig, webllm);
+          const engine = await webllm.CreateMLCEngine(selectedModel, {
+            appConfig,
             initProgressCallback: options.onProgress
           });
           return engine;
@@ -51,11 +94,54 @@ function createRuntime(options) {
     },
     state() {
       return {
-        model: options.model || "Llama-3.2-3B-Instruct-q4f16_1",
+        model: selectedModel || options.model || "unknown",
         runtime: "webllm"
       };
     }
   };
+}
+
+function resolveModelId(requestedModel, appConfig, webllm) {
+  const models = Array.isArray(appConfig?.model_list) ? appConfig.model_list : [];
+  const availableIds = models.map((entry) => entry?.model_id).filter(Boolean);
+
+  if (requestedModel && availableIds.includes(requestedModel)) {
+    return requestedModel;
+  }
+
+  if (requestedModel) {
+    const req = String(requestedModel).toLowerCase();
+    const normalizedReq = req.replace(/[^a-z0-9]+/g, "");
+    const fuzzyMatch = availableIds.find((id) => {
+      const low = id.toLowerCase();
+      const normalizedId = low.replace(/[^a-z0-9]+/g, "");
+      return low.includes(req) || req.includes(low) || normalizedId.includes(normalizedReq) || normalizedReq.includes(normalizedId);
+    });
+    if (fuzzyMatch) return fuzzyMatch;
+  }
+
+  const preferredHints = [
+    "Llama-3.2-3B",
+    "Llama-3.1-8B",
+    "Phi-3",
+    "Qwen2",
+    "Mistral"
+  ];
+
+  for (const hint of preferredHints) {
+    const match = availableIds.find((id) => id.includes(hint));
+    if (match) return match;
+  }
+
+  if (availableIds.length > 0) {
+    return availableIds[0];
+  }
+
+  if (requestedModel) return requestedModel;
+  if (webllm?.modelLibURLPrefix) {
+    throw new Error("No WebLLM models available in appConfig.model_list.");
+  }
+  throw new Error("Unable to resolve a WebLLM model ID.");
 }
 
 function surveyPromptMessages(prompt, options) {

@@ -1,6 +1,6 @@
 import { createQuestion, createSurvey, normalizeSurvey } from "../core/index.js";
 
-export async function generateSurveyWithAi({ prompt = "", provider } = {}) {
+export async function generateSurveyWithAi({ prompt = "", provider, ...requestOptions } = {}) {
   const runtime = normalizeProvider(provider);
 
   if (!runtime) {
@@ -12,7 +12,7 @@ export async function generateSurveyWithAi({ prompt = "", provider } = {}) {
   }
 
   try {
-    const result = await runtime.generateSurvey({ prompt });
+    const result = await runtime.generateSurvey({ prompt, ...requestOptions });
     const survey = normalizeSurvey(result?.survey || result);
     return { ok: true, survey, runtime: runtime.describe?.() };
   } catch (error) {
