@@ -57,16 +57,31 @@ test("public stylesheet preserves original typography and import behavior", () =
   assert.deepEqual(packageJson.sideEffects, ["**/*.css"]);
 });
 
-test("public stylesheet keeps builder modern layout centered with movable sidebars", () => {
+test("public stylesheet keeps builder sidebars inside the layout grid", () => {
   const stylesheet = readFileSync(new URL("../../src/styles/plainsurvey.css", import.meta.url), "utf8");
-  const layoutStylesheet = readFileSync(new URL("../../src/styles/layouts.css", import.meta.url), "utf8");
+  const builderStylesheet = readFileSync(new URL("../../src/builder/assets/styles/builder.css", import.meta.url), "utf8");
+  const studioStylesheet = readFileSync(new URL("../../src/builder/assets/styles/studio.css", import.meta.url), "utf8");
 
-  assert.match(stylesheet, /\.ps-builder > \.ps-builder-panel > \.ps-builder-panel\s*\{/);
-  assert.match(stylesheet, /@import url\("\.\/layouts\.css"\)/);
-  assert.match(layoutStylesheet, /html\[data-layout="modern"\] \.builder-layout\s*\{[\s\S]*grid-template-columns:[\s\S]*minmax\(250px, 18fr\)[\s\S]*minmax\(0, 60fr\)[\s\S]*minmax\(320px, 18fr\)/);
-  assert.match(layoutStylesheet, /html\[data-layout="modern"\] \.builder-toolbox,[\s\S]*html\[data-layout="modern"\] \.properties-panel\s*\{[\s\S]*position:\s*fixed/);
-  assert.match(layoutStylesheet, /html\[data-layout="modern"\] \.builder-preview\s*\{[\s\S]*grid-column:\s*2/);
-  assert.match(layoutStylesheet, /html\[data-layout="modern"\] \.ps-builder > \.ps-builder-preview\s*\{[\s\S]*max-width:\s*none;[\s\S]*margin-inline:\s*0/);
+  assert.match(stylesheet, /@import url\("\.\.\/builder\/assets\/styles\/builder\.css"\)/);
+  assert.match(stylesheet, /@import url\("\.\.\/builder\/assets\/styles\/studio\.css"\)/);
+  assert.match(stylesheet, /@import url\("\.\.\/ai\/assets\/styles\/ai-generator\.css"\)/);
+  assert.match(stylesheet, /@import url\("\.\.\/ai\/assets\/styles\/insight-consultant\.css"\)/);
+  assert.doesNotMatch(stylesheet, /@import url\("\.\.\/analytics\/assets\/styles\/dashboard\.css"\)/);
+  assert.doesNotMatch(stylesheet, /@import url\("\.\/layouts\.css"\)/);
+
+  assert.match(builderStylesheet, /\.ps-builder > \.ps-builder-panel > \.ps-builder-panel\s*\{/);
+  assert.match(builderStylesheet, /\.builder-view-tabs\s*\{/);
+  assert.doesNotMatch(builderStylesheet, /\.structure-panel/);
+  assert.doesNotMatch(builderStylesheet, /\.config-tree/);
+
+  assert.doesNotMatch(studioStylesheet, /data-layout/);
+  assert.match(builderStylesheet, /\.builder-layout\s*\{[\s\S]*grid-template-columns:[\s\S]*minmax\(var\(--ps-collapsed-sidebar-width\), var\(--ps-left-sidebar-width\)\)[\s\S]*minmax\(0, 1fr\)[\s\S]*minmax\(var\(--ps-collapsed-sidebar-width\), var\(--ps-right-sidebar-width\)\)/);
+  assert.match(builderStylesheet, /\.builder-layout:has\(\.builder-toolbox\.is-collapsed\)/);
+  assert.match(builderStylesheet, /\.builder-center-workspace\s*\{[\s\S]*grid-column:\s*2/);
+  assert.doesNotMatch(builderStylesheet, /\.builder-preview\s*\{[^}]*grid-column/);
+  assert.match(builderStylesheet, /\.builder-view-tabs\s*\{[\s\S]*position:\s*static;[\s\S]*min-height:\s*58px/);
+  assert.match(builderStylesheet, /\.builder-layout \.panel-float-handle\s*\{[\s\S]*min-height:\s*58px/);
+  assert.match(builderStylesheet, /\.ps-builder\s*\{[\s\S]*width:\s*100%;[\s\S]*max-width:\s*100%/);
 });
 
 test("all bundled themes expose extended builder surface tokens", () => {

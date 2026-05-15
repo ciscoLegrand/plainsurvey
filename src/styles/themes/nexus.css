@@ -1,17 +1,198 @@
 html[data-theme="nexus"] {
-  --ps-bg: #eef8fb; --ps-surface: #f8feff; --ps-surface-soft: #e8f5fa; --ps-ink: #0b2431; --ps-muted: #4d6a78; --ps-line: #bfd9e6; --ps-primary: #057ea9; --ps-primary-ink: #f8feff; --ps-secondary: #0f9d73; --ps-danger: #b13d4f; --ps-warning-bg: #fff4db; --ps-error-bg: #fff1f3;
-  --ps-accent: #ffca3a; --ps-accent-2: #f72585; --ps-canvas-bg: linear-gradient(135deg, #f8feff 0%, #e5f7fb 100%); --ps-panel-bg: #f8feff; --ps-section-bg: color-mix(in srgb, var(--ps-surface-soft) 58%, transparent); --ps-question-bg: color-mix(in srgb, var(--ps-surface) 88%, transparent); --ps-inset-bg: #e8f5fa; --ps-divider: color-mix(in srgb, var(--ps-ink) 18%, var(--ps-line)); --ps-ornament: linear-gradient(90deg, var(--ps-primary), var(--ps-accent), var(--ps-accent-2));
-  --ps-radius: 0; --ps-radius-lg: 0; --ps-radius-control: 0; --ps-radius-pill: 0; --ps-border-width: 2px;
-  --ps-card-border: var(--ps-border-width) solid var(--ps-ink); --ps-card-bg: #f8feff; --ps-card-shadow: 8px 8px 0 color-mix(in srgb, var(--ps-ink) 88%, transparent); --ps-shadow: var(--ps-card-shadow); --ps-shadow-soft: 5px 5px 0 color-mix(in srgb, var(--ps-primary) 38%, transparent); --ps-field-bg: #ffffff; --ps-gradient-primary: linear-gradient(135deg, var(--ps-primary) 0%, var(--ps-secondary) 100%); --ps-focus-ring: 0 0 0 4px color-mix(in srgb, var(--ps-primary) 18%, transparent);
-  --ps-space-1: 4px; --ps-space-2: 8px; --ps-space-3: 12px; --ps-space-4: 16px; --ps-space-5: 18px; --ps-space-6: 24px; --ps-control-min-height: 42px; --ps-panel-top: 116px; --ps-panel-offset: 18px; --ps-panel-max-block: calc(100vh - 130px); --ps-toolbox-width: min(310px, 30vw); --ps-properties-width: min(420px, 38vw); --ps-preview-max-width: 1080px; --ps-preview-margin-start: clamp(330px, 22vw, 390px); --ps-preview-margin-end: clamp(430px, 28vw, 480px);
+  --ps-font-family: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
+
+  --ink: #10180f;
+  --brand-forest: #17251b;
+  --brand-olive: #313727;
+  --brand-green: #46b915;
+  --brand-lime: #c9ff35;
+  --brand-glow: #e3ff55;
+  --brand-mist: #f1ffd9;
+  --indigo: #2d6f28;
+  --paper: #fbfff3;
+  --btn-light: #fbfff3;
+  --btn-dark: #10180f;
+  --btn-ghost: hsl(0 0% 100% / 0.01);
+  --btn-acid: #c9ff35;
+  --btn-acid-soft: rgb(201 255 53 / 22%);
+
+  --ps-bg: var(--paper);
+  --ps-surface: #ffffff;
+  --ps-surface-soft: color-mix(in srgb, var(--paper) 72%, var(--brand-mist));
+  --ps-ink: var(--ink);
+  --ps-muted: color-mix(in srgb, var(--brand-forest) 72%, #5f6b53);
+  --ps-line: color-mix(in srgb, var(--brand-olive) 45%, #c8d7af);
+  --ps-primary: var(--brand-green);
+  --ps-primary-ink: #10180f;
+  --ps-secondary: var(--indigo);
+  --ps-danger: #b13d4f;
+  --ps-warning-bg: #fff4db;
+  --ps-error-bg: #fff1f3;
+
+  --ps-accent: var(--brand-lime);
+  --ps-accent-2: var(--brand-glow);
+  --ps-canvas-bg: radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--brand-glow) 36%, transparent), transparent 36%), linear-gradient(150deg, #f8ffe7 0%, #f2ffd8 42%, #ecffd0 100%);
+  --ps-panel-bg: color-mix(in srgb, var(--paper) 78%, #ffffff);
+  --ps-section-bg: color-mix(in srgb, var(--brand-mist) 66%, transparent);
+  --ps-question-bg: color-mix(in srgb, var(--ps-surface) 88%, var(--brand-mist));
+  --ps-inset-bg: color-mix(in srgb, var(--brand-mist) 78%, #ffffff);
+  --ps-divider: color-mix(in srgb, var(--ps-line) 78%, transparent);
+  --ps-ornament: linear-gradient(90deg, var(--brand-forest), var(--brand-green), var(--brand-lime), var(--brand-glow));
+
+  --ps-radius: 0;
+  --ps-radius-lg: 0;
+  --ps-radius-control: 0;
+  --ps-radius-pill: 0;
+  --ps-border-width: 2px;
+
+  --ps-card-border: var(--ps-border-width) solid color-mix(in srgb, var(--brand-forest) 90%, #2f4027);
+  --ps-card-bg: linear-gradient(160deg, #ffffff, color-mix(in srgb, var(--paper) 86%, #ffffff));
+  --ps-card-shadow: 8px 8px 0 color-mix(in srgb, var(--brand-forest) 88%, transparent);
+  --ps-shadow: var(--ps-card-shadow);
+  --ps-shadow-soft: 5px 5px 0 color-mix(in srgb, var(--brand-green) 34%, transparent);
+  --ps-field-bg: var(--btn-light);
+
+  --ps-control-border-style: solid;
+  --ps-control-shadow: 3px 3px 0 color-mix(in srgb, var(--brand-forest) 76%, transparent);
+
+  --ps-button-radius: 0;
+  --ps-button-border-width: 2px;
+  --ps-button-border-color: color-mix(in srgb, var(--brand-forest) 90%, #2f4027);
+  --ps-button-bg: color-mix(in srgb, var(--brand-mist) 64%, #ffffff);
+  --ps-button-color: var(--btn-dark);
+  --ps-button-shadow: 4px 4px 0 color-mix(in srgb, var(--brand-forest) 88%, transparent);
+
+  --ps-button-primary-bg: linear-gradient(135deg, var(--btn-acid), var(--brand-glow));
+  --ps-button-primary-color: var(--btn-dark);
+  --ps-button-primary-border-color: color-mix(in srgb, var(--brand-forest) 84%, #2f4027);
+  --ps-button-primary-shadow: 5px 5px 0 color-mix(in srgb, var(--brand-forest) 92%, transparent);
+  --ps-button-letter-spacing: 0.03em;
+
+  --ps-gradient-primary: linear-gradient(135deg, var(--ps-primary) 0%, var(--ps-secondary) 100%);
+  --ps-focus-ring: 0 0 0 4px color-mix(in srgb, var(--btn-acid) 34%, transparent);
+
+  --ps-dashboard-series-1: var(--ps-primary);
+  --ps-dashboard-series-2: var(--ps-secondary);
+  --ps-dashboard-series-3: var(--ps-accent);
+  --ps-dashboard-series-4: var(--ps-accent-2);
+  --ps-dashboard-series-5: color-mix(in srgb, var(--brand-green) 52%, var(--indigo));
+  --ps-dashboard-series-empty: color-mix(in srgb, var(--ps-line) 72%, transparent);
+  --ps-dashboard-max-width: min(100%, 1440px);
+  --ps-dashboard-chart-min-height: clamp(24rem, 48vh, 34rem);
+  --ps-dashboard-hero-side-min: 18rem;
+  --ps-dashboard-main-side-min: 18rem;
+
+  --ps-space-1: 4px;
+  --ps-space-2: 8px;
+  --ps-space-3: 12px;
+  --ps-space-4: 16px;
+  --ps-space-5: 18px;
+  --ps-space-6: 24px;
+  --ps-control-min-height: 42px;
+  --ps-panel-top: 116px;
+  --ps-panel-offset: 18px;
+  --ps-panel-max-block: calc(100vh - 130px);
+  --ps-toolbox-width: min(310px, 30vw);
+  --ps-properties-width: min(420px, 38vw);
+  --ps-preview-max-width: 1080px;
+  --ps-preview-margin-start: clamp(330px, 22vw, 390px);
+  --ps-preview-margin-end: clamp(430px, 28vw, 480px);
   color-scheme: light;
 }
-html[data-theme="nexus"][data-mode="dark"], html[data-theme="nexus"][data-mode="darkless"] {
-  --ps-bg: #071820; --ps-surface: #0b2431; --ps-surface-soft: #123647; --ps-ink: #e9fbff; --ps-muted: #a8c8d4; --ps-line: #2f6378; --ps-primary: #47d5ff; --ps-primary-ink: #04151c; --ps-secondary: #5bf0b4; --ps-danger: #ff8fab; --ps-warning-bg: #392d16; --ps-error-bg: #3a1820;
-  --ps-accent: #ffe66d; --ps-accent-2: #ff5c9d; --ps-canvas-bg: linear-gradient(135deg, #071820 0%, #041014 100%); --ps-panel-bg: #0b2431; --ps-section-bg: color-mix(in srgb, var(--ps-surface-soft) 46%, transparent); --ps-question-bg: color-mix(in srgb, var(--ps-surface) 82%, transparent); --ps-inset-bg: #071820; --ps-divider: color-mix(in srgb, var(--ps-line) 86%, transparent); --ps-ornament: linear-gradient(90deg, var(--ps-primary), var(--ps-accent), var(--ps-accent-2));
-  --ps-radius: 0; --ps-radius-lg: 0; --ps-radius-control: 0; --ps-radius-pill: 0; --ps-border-width: 2px;
-  --ps-card-border: var(--ps-border-width) solid var(--ps-line); --ps-card-bg: #0b2431; --ps-card-shadow: 8px 8px 0 #000000; --ps-shadow: var(--ps-card-shadow); --ps-shadow-soft: 5px 5px 0 color-mix(in srgb, var(--ps-primary) 34%, transparent); --ps-field-bg: #071820; --ps-gradient-primary: linear-gradient(135deg, var(--ps-primary) 0%, var(--ps-secondary) 100%); --ps-focus-ring: 0 0 0 4px color-mix(in srgb, var(--ps-primary) 18%, transparent);
-  --ps-space-1: 4px; --ps-space-2: 8px; --ps-space-3: 12px; --ps-space-4: 16px; --ps-space-5: 18px; --ps-space-6: 24px; --ps-control-min-height: 42px; --ps-panel-top: 116px; --ps-panel-offset: 18px; --ps-panel-max-block: calc(100vh - 130px); --ps-toolbox-width: min(310px, 30vw); --ps-properties-width: min(420px, 38vw); --ps-preview-max-width: 1080px; --ps-preview-margin-start: clamp(330px, 22vw, 390px); --ps-preview-margin-end: clamp(430px, 28vw, 480px);
+
+html[data-theme="nexus"][data-mode="dark"],
+html[data-theme="nexus"][data-mode="darkless"] {
+  --ps-font-family: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
+
+  --ink: #eef8dd;
+  --brand-forest: #10180f;
+  --brand-olive: #17251b;
+  --brand-green: #46b915;
+  --brand-lime: #c9ff35;
+  --brand-glow: #e3ff55;
+  --brand-mist: #2a361b;
+  --indigo: #7bcf6a;
+  --paper: #10180f;
+  --btn-light: #e5ffd6;
+  --btn-dark: #10180f;
+  --btn-ghost: hsl(0 0% 100% / 0.01);
+  --btn-acid: #c9ff35;
+  --btn-acid-soft: rgb(201 255 53 / 24%);
+
+  --ps-bg: #0f160f;
+  --ps-surface: #17251b;
+  --ps-surface-soft: #223222;
+  --ps-ink: var(--ink);
+  --ps-muted: color-mix(in srgb, var(--ink) 76%, #9eb48d);
+  --ps-line: color-mix(in srgb, var(--brand-lime) 34%, #2f3d26);
+  --ps-primary: #74dd3c;
+  --ps-primary-ink: #10180f;
+  --ps-secondary: #7bcf6a;
+  --ps-danger: #ff8fab;
+  --ps-warning-bg: #392d16;
+  --ps-error-bg: #3a1820;
+
+  --ps-accent: var(--brand-lime);
+  --ps-accent-2: var(--brand-glow);
+  --ps-canvas-bg: radial-gradient(circle at 16% 0%, rgb(201 255 53 / 20%), transparent 40%), linear-gradient(140deg, #0f160f 0%, #17251b 45%, #111b12 100%);
+  --ps-panel-bg: color-mix(in srgb, var(--ps-surface) 94%, #0d140d);
+  --ps-section-bg: color-mix(in srgb, var(--ps-surface-soft) 52%, transparent);
+  --ps-question-bg: color-mix(in srgb, var(--ps-surface) 84%, transparent);
+  --ps-inset-bg: #121d12;
+  --ps-divider: color-mix(in srgb, var(--ps-line) 78%, transparent);
+  --ps-ornament: linear-gradient(90deg, #355d23, var(--brand-green), var(--brand-lime), var(--brand-glow));
+
+  --ps-radius: 0;
+  --ps-radius-lg: 0;
+  --ps-radius-control: 0;
+  --ps-radius-pill: 0;
+  --ps-border-width: 2px;
+
+  --ps-card-border: var(--ps-border-width) solid color-mix(in srgb, var(--ps-line) 94%, #1f2d1a);
+  --ps-card-bg: linear-gradient(160deg, #17251b, #1b2b1f);
+  --ps-card-shadow: 8px 8px 0 #000000;
+  --ps-shadow: var(--ps-card-shadow);
+  --ps-shadow-soft: 5px 5px 0 rgb(0 0 0 / 64%);
+  --ps-field-bg: #131d13;
+
+  --ps-control-border-style: solid;
+  --ps-control-shadow: 3px 3px 0 #000000;
+
+  --ps-button-radius: 0;
+  --ps-button-border-width: 2px;
+  --ps-button-border-color: color-mix(in srgb, var(--ps-line) 94%, #1f2d1a);
+  --ps-button-bg: color-mix(in srgb, var(--ps-surface-soft) 80%, #1b2b1f);
+  --ps-button-color: var(--ps-ink);
+  --ps-button-shadow: 4px 4px 0 #000000;
+
+  --ps-button-primary-bg: linear-gradient(135deg, #a5f52f, #d9ff4f);
+  --ps-button-primary-color: var(--btn-dark);
+  --ps-button-primary-border-color: #0f160f;
+  --ps-button-primary-shadow: 5px 5px 0 #000000;
+  --ps-button-letter-spacing: 0.03em;
+
+  --ps-gradient-primary: linear-gradient(135deg, var(--ps-primary) 0%, var(--ps-secondary) 100%);
+  --ps-focus-ring: 0 0 0 4px var(--btn-acid-soft);
+
+  --ps-space-1: 4px;
+  --ps-space-2: 8px;
+  --ps-space-3: 12px;
+  --ps-space-4: 16px;
+  --ps-space-5: 18px;
+  --ps-space-6: 24px;
+  --ps-control-min-height: 42px;
+  --ps-panel-top: 116px;
+  --ps-panel-offset: 18px;
+  --ps-panel-max-block: calc(100vh - 130px);
+  --ps-toolbox-width: min(310px, 30vw);
+  --ps-properties-width: min(420px, 38vw);
+  --ps-preview-max-width: 1080px;
+  --ps-preview-margin-start: clamp(330px, 22vw, 390px);
+  --ps-preview-margin-end: clamp(430px, 28vw, 480px);
   color-scheme: dark;
 }
-html[data-theme="nexus"][data-mode="darkless"] { --ps-card-shadow: none; --ps-shadow: var(--ps-card-shadow); }
+
+html[data-theme="nexus"][data-mode="darkless"] {
+  --ps-card-shadow: none;
+  --ps-shadow: var(--ps-card-shadow);
+}
