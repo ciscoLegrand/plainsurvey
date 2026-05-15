@@ -1,0 +1,265 @@
+.ps-studio {
+  min-height: 100vh;
+}
+
+.ps-studio nav {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 18px clamp(18px, 4vw, 52px);
+  border-bottom: 2px solid color-mix(in srgb, var(--ps-ink) 16%, var(--ps-line));
+  background: color-mix(in srgb, var(--ps-surface) 92%, transparent);
+  backdrop-filter: blur(14px) saturate(145%);
+}
+
+.plainsurveyToolbar {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ps-studio-mainnav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.ps-studio-tabs,
+.ps-studio-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ps-studio-tabs {
+  padding: 8px;
+  border: 2px solid var(--ps-ink);
+  background: var(--ps-card-bg, var(--ps-surface));
+  box-shadow: var(--ps-card-shadow, 6px 6px 0 rgba(15, 23, 42, 0.12));
+}
+
+.ps-studio-tabs button {
+  min-height: 42px;
+  padding-inline: 14px;
+  border: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ps-ink);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ps-studio-tabs .is-active {
+  color: var(--ps-primary-ink);
+  background: var(--ps-gradient-primary);
+  border-color: var(--ps-ink);
+}
+
+.ps-studio [data-appearance-controls] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-inline-start: auto;
+  padding: 8px 10px;
+  border: 2px solid color-mix(in srgb, var(--ps-ink) 18%, var(--ps-line));
+  background: color-mix(in srgb, var(--ps-surface-soft) 52%, var(--ps-surface));
+}
+
+.ps-studio [data-appearance-controls] label,
+.ps-studio section > label {
+  display: grid;
+  gap: 4px;
+  color: var(--ps-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.ps-studio [data-appearance-controls] select,
+.ps-studio section > label select {
+  min-width: 150px;
+  min-height: 36px;
+  padding: 7px 10px;
+}
+
+.ps-studio main {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 24px clamp(18px, 4vw, 52px) 52px;
+}
+
+.ps-studio main > section,
+.ps-studio main > div {
+  padding: 18px;
+}
+
+.ps-json-workspace {
+  display: grid;
+  gap: 16px;
+}
+
+.ps-json-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+}
+
+.ps-json-panel {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--ps-line) 84%, transparent);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--ps-surface) 94%, transparent);
+  box-shadow: var(--ps-shadow-sm, 0 10px 30px rgba(15, 23, 42, 0.08));
+}
+
+.ps-json-panel-header {
+  display: grid;
+  gap: 6px;
+}
+
+.ps-json-panel-header h2,
+.ps-json-panel-header p {
+  margin: 0;
+}
+
+.ps-json-panel textarea,
+.ps-json-panel pre {
+  min-width: 0;
+  min-height: 320px;
+  margin: 0;
+  overflow: auto;
+}
+
+.ps-studio [data-studio-view="builder"] > div {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.ps-studio table {
+  width: 100%;
+  margin-block: 14px;
+  border-collapse: collapse;
+}
+
+.ps-studio th,
+.ps-studio td {
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--ps-line) 88%, transparent);
+  text-align: left;
+}
+
+.ps-studio pre {
+  overflow: auto;
+  padding: 14px;
+  border-radius: var(--ps-radius-control);
+  background: color-mix(in srgb, var(--ps-surface-soft) 68%, var(--ps-surface));
+}
+
+.ps-file-button {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--ps-line) 92%, #ffffff);
+  border-radius: var(--ps-radius-control);
+  padding: 10px 13px;
+  font-weight: 800;
+  cursor: pointer;
+  background: color-mix(in srgb, var(--ps-secondary) 8%, var(--ps-surface));
+}
+
+.ps-file-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.ps-state-success,
+.ps-state-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--ps-radius-control);
+}
+
+.ps-state-success {
+  color: var(--ps-primary);
+  background: color-mix(in srgb, var(--ps-primary) 10%, var(--ps-surface));
+}
+
+.ps-state-error {
+  color: var(--ps-danger);
+  background: color-mix(in srgb, var(--ps-danger) 10%, var(--ps-surface));
+}
+
+.ps-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: color-mix(in srgb, var(--ps-ink) 28%, transparent);
+}
+
+.ps-dialog {
+  width: min(920px, 100%);
+  max-height: min(88vh, 980px);
+  overflow: auto;
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 2px solid color-mix(in srgb, var(--ps-ink) 18%, var(--ps-line));
+  background: var(--ps-surface);
+  box-shadow: var(--ps-shadow, 0 20px 44px rgba(15, 23, 42, 0.2));
+}
+
+.ps-dialog-header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ps-dialog-header h2 {
+  margin: 0;
+}
+
+.ps-dialog textarea {
+  min-height: 340px;
+}
+
+@media (max-width: 780px) {
+  .ps-renderer {
+    margin: 0;
+    padding: 14px;
+  }
+
+  .ps-actions,
+  .ps-builder-actions {
+    justify-content: stretch;
+  }
+
+  .ps-actions > *,
+  .ps-builder-actions > * {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -17,6 +17,13 @@ export const builderMessages = {
   questionsInPage: "Questions on this page: {count}",
   surveyTitle: "Survey title",
   surveyDescription: "Survey description",
+  surveyImage: "Survey image",
+  questionTitle: "Question title",
+  questionDescription: "Question description",
+  questionNameAria: "Question technical name",
+  questionTitleAria: "Question title",
+  questionDescriptionAria: "Question description",
+  questionRequiredAria: "Question required",
   pageTitle: "Page title",
   pageDescription: "Page description",
   type: "Type",
@@ -38,11 +45,17 @@ export const builderMessages = {
   min: "Min",
   max: "Max",
   placeholder: "Placeholder",
+  booleanTrueLabel: "True label",
+  booleanFalseLabel: "False label",
+  booleanTrueLabelAria: "Boolean true label",
+  booleanFalseLabelAria: "Boolean false label",
   rows: "Rows",
   columns: "Columns",
   scoringSummary: "Scoring and correction",
   visibilitySummary: "Visibility logic",
   scoringToggleLabel: "Mark this question as scorable",
+  scoringEnabled: "Scorable",
+  scoringDisabled: "Not scorable",
   scoringEmptyInfo: "Enable scoring to store score, weight, correct answer and rationale.",
   scoringDisabledInfo: "This type is informational and is not scored.",
   correctAnswerListHint: "Use one technical value per line, in the correct order.",
@@ -84,7 +97,11 @@ export const builderMessages = {
   blockBodyHint: "Free text: story, instructions, statement...",
   sparkle: "Spark",
   waves: "Waves",
-  orbit: "Orbit"
+  orbit: "Orbit",
+  quickEditOptions: "Quick options",
+  builderTab: "Builder",
+  previewTab: "Preview",
+  jsonTab: "JSON Editor"
 };
 
 export const builderTypeLabels = {
@@ -103,7 +120,7 @@ export const builderTypeLabels = {
   codeBlock: "Code block",
   svgNote: "Visual note",
   contentBlock: "Content block",
-  boolean: "Yes / No"
+  boolean: "Boolean"
 };
 
 export const builderTypeSummaries = {

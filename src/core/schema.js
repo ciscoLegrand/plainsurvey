@@ -16,7 +16,7 @@ export const QUESTION_TYPES = [
   { value: "codeBlock", label: "Code block" },
   { value: "svgNote", label: "Visual note" },
   { value: "contentBlock", label: "Content block" },
-  { value: "boolean", label: "Yes or no" }
+  { value: "boolean", label: "Boolean" }
 ];
 
 export const QUESTION_TYPE_VALUES = QUESTION_TYPES.map((type) => type.value);
@@ -69,6 +69,7 @@ export function createSurvey(overrides = {}) {
     version: 1,
     title: "Untitled survey",
     description: "",
+    imageUrl: "",
     pages: [createPage("Page 1")],
     ...overrides
   });
@@ -129,6 +130,7 @@ export function normalizeSurvey(input = {}) {
     version: toPositiveInteger(input.version, 1),
     title: stringOr(input.title, "Untitled survey"),
     description: stringOr(input.description, ""),
+    imageUrl: stringOr(input.imageUrl ?? input.logoUrl ?? input.coverImage, ""),
     pages: pages.map((page, index) => normalizePage(page, index))
   };
 }
@@ -184,7 +186,11 @@ function applyTypeDefaults(question) {
     question.rateMin = 1;
     question.rateMax = 5;
   }
-  if (question.type === "boolean") question.required = false;
+  if (question.type === "boolean") {
+    question.required = false;
+    question.trueLabel = "Yes";
+    question.falseLabel = "No";
+  }
   if (question.type === "text") question.placeholder = "Type your answer";
   if (question.type === "textarea") question.placeholder = "Tell us more";
   if (question.type === "codeBlock") {
@@ -211,6 +217,10 @@ function applyTypeSpecificFields(normalized, source) {
   if (normalized.type === "rating") {
     normalized.rateMin = toNumber(source.rateMin, 1);
     normalized.rateMax = Math.max(normalized.rateMin, toNumber(source.rateMax, 5));
+  }
+  if (normalized.type === "boolean") {
+    normalized.trueLabel = stringOr(source.trueLabel ?? source.yesLabel ?? source.labelTrue, "Yes");
+    normalized.falseLabel = stringOr(source.falseLabel ?? source.noLabel ?? source.labelFalse, "No");
   }
   if (normalized.type === "codeBlock") {
     normalized.language = stringOr(source.language, "text");
@@ -343,6 +353,13 @@ function normalizeVisibleIf(visibleIf) {
     question: String(visibleIf.question),
     operator,
     value: visibleIf.value
+  };
+}
+
+export function getBooleanLabels(question = {}, fallback = {}) {
+  return {
+    trueLabel: stringOr(question.trueLabel ?? question.yesLabel ?? question.labelTrue, fallback.trueLabel || "Yes"),
+    falseLabel: stringOr(question.falseLabel ?? question.noLabel ?? question.labelFalse, fallback.falseLabel || "No")
   };
 }
 

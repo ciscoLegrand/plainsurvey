@@ -41,16 +41,77 @@ export function input(value, onInput, attrs = {}) {
     ...attrs,
     class: attrs.class ? `ps-builder-control ps-builder-input ${attrs.class}` : "ps-builder-control ps-builder-input",
     value: value ?? "",
+    "aria-label": attrs["aria-label"] || "",
     oninput: (event) => onInput(event.target.value)
   });
 }
 
 export function textarea(value, onInput, attrs = {}) {
-  return el("textarea", {
-    ...attrs,
-    class: attrs.class ? `ps-builder-control ps-builder-textarea ${attrs.class}` : "ps-builder-control ps-builder-textarea",
-    oninput: (event) => onInput(event.target.value)
+  const { autoHeight, ...rest } = attrs;
+  const node = el("textarea", {
+    ...rest,
+    class: autoHeight
+      ? (rest.class ? `ps-builder-control ps-builder-textarea auto-height ${rest.class}` : "ps-builder-control ps-builder-textarea auto-height")
+      : (rest.class ? `ps-builder-control ps-builder-textarea ${rest.class}` : "ps-builder-control ps-builder-textarea"),
+    "aria-label": rest["aria-label"] || "",
+    oninput: (event) => {
+      if (autoHeight && !CSS.supports("field-sizing", "content")) {
+        event.target.style.height = "auto";
+        event.target.style.height = `${event.target.scrollHeight}px`;
+      }
+      onInput(event.target.value);
+    }
   }, [value ?? ""]);
+  if (autoHeight && !CSS.supports("field-sizing", "content")) {
+    queueMicrotask(() => {
+      node.style.height = "auto";
+      node.style.height = `${node.scrollHeight}px`;
+    });
+  }
+  return node;
+}
+
+export function imageInput(value, onInput, attrs = {}) {
+  const { "aria-label": ariaLabel = "", dataset, ...rest } = attrs;
+
+  const urlInput = el("input", {
+    ...rest,
+    type: "url",
+    placeholder: "https://...",
+    class: "ps-builder-control ps-builder-input",
+    value: value ?? "",
+    "aria-label": ariaLabel,
+    ...(dataset ? { dataset } : {}),
+    oninput: (event) => onInput(event.target.value)
+  });
+
+  const fileInput = el("input", {
+    type: "file",
+    accept: "image/*",
+    style: "display:none",
+    "aria-label": ariaLabel ? `${ariaLabel} - archivo` : "Seleccionar imagen"
+  });
+
+  fileInput.addEventListener("change", (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      urlInput.value = e.target.result;
+      onInput(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  });
+
+  const browseBtn = el("button", {
+    type: "button",
+    class: "ps-builder-image-browse icon-button",
+    title: "Seleccionar archivo",
+    html: `<svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M.5 3.5A1.5 1.5 0 0 1 2 2h3.586a1.5 1.5 0 0 1 1.06.44l.415.415A1.5 1.5 0 0 0 8.121 3.5H14A1.5 1.5 0 0 1 15.5 5v7A1.5 1.5 0 0 1 14 13.5H2A1.5 1.5 0 0 1 .5 12V3.5z"/></svg>`,
+    onclick: () => fileInput.click()
+  });
+
+  return el("div", { class: "ps-builder-image-input" }, [urlInput, browseBtn, fileInput]);
 }
 
 export function select(value, options, onChange, attrs = {}) {

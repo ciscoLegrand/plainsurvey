@@ -1,4 +1,5 @@
 import { el } from "./dom.js";
+import { getBooleanLabels } from "../core/schema.js";
 
 export function renderPreviewControl(question, { labelForType, t }) {
   if (question.type === "svgNote") return renderPreviewNote(question);
@@ -69,9 +70,14 @@ export function renderPreviewControl(question, { labelForType, t }) {
     }));
   }
   if (question.type === "boolean") {
-    return el("div", { class: "segmented preview-control" }, [
-      el("button", { type: "button", disabled: true, text: t("yes", {}, "Si") }),
-      el("button", { type: "button", disabled: true, text: t("no", {}, "No") })
+    const labels = getBooleanLabels(question, {
+      trueLabel: t("yes", {}, "Si"),
+      falseLabel: t("no", {}, "No")
+    });
+
+    return el("div", { class: "ps-boolean-toggle ps-boolean-toggle-preview preview-control", dataset: { state: "unset" } }, [
+      el("button", { class: "ps-boolean-option", type: "button", disabled: true, text: labels.trueLabel }),
+      el("button", { class: "ps-boolean-option", type: "button", disabled: true, text: labels.falseLabel })
     ]);
   }
 
@@ -79,8 +85,8 @@ export function renderPreviewControl(question, { labelForType, t }) {
 }
 
 function renderPreviewNote(question) {
-  return el("div", { class: `svg-note svg-note-${question.variant || "spark"}` }, [
-    el("div", { class: "svg-art", html: "<svg viewBox=\"0 0 120 80\" aria-hidden=\"true\"><path d=\"M60 8l10 22 24 4-18 17 5 24-21-12-21 12 5-24-18-17 24-4z\" fill=\"currentColor\"/></svg>" }),
+  return el("div", { class: `svg-note svg-note-${question.variant || "spark"}`, style: "display: flex; align-items: center;" }, [
+    el("div", { class: "svg-art", style:"width: 64px;", html: "<svg viewBox=\"0 0 120 80\" aria-hidden=\"true\"><path d=\"M60 8l10 22 24 4-18 17 5 24-21-12-21 12 5-24-18-17 24-4z\" fill=\"currentColor\"/></svg>" }),
     el("div", {}, [el("strong", { text: question.title })])
   ]);
 }

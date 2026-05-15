@@ -6,6 +6,7 @@ export {
   createSurvey,
   createPage,
   createQuestion,
+  getBooleanLabels,
   hasChoices,
   isAnswerlessQuestion,
   normalizeSurvey

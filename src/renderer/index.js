@@ -1,6 +1,7 @@
 import {
 	calculateSurveyScore,
 	createSession,
+	getBooleanLabels,
 	nextPage,
 	previousPage,
 	setAnswer,
@@ -158,8 +159,13 @@ export function createSurveyRenderer(options = {}) {
 				goNext();
 			}
 		}, [
-			el("section", { class: ui.page }, [
-				el("header", { class: ui.header }, [
+				el("section", { class: ui.page }, [
+					el("header", { class: ui.header }, [
+					session.survey.imageUrl ? el("img", {
+						class: "ps-survey-image",
+						src: session.survey.imageUrl,
+						alt: session.survey.title || ""
+					}) : null,
 					el("p", {
 						class: ui.eyebrow,
 						text: translate("pageCounter", {
@@ -251,10 +257,7 @@ export function createSurveyRenderer(options = {}) {
 			case "matrix":
 				return renderMatrix(question, value || {});
 			case "boolean":
-				return renderChoiceButtons(question, value, [
-					{ value: true, text: translate("yes") },
-					{ value: false, text: translate("no") }
-				]);
+				return renderBooleanToggle(question, value);
 			case "text":
 			default:
 				return el("input", {
@@ -307,6 +310,29 @@ export function createSurveyRenderer(options = {}) {
 		}));
 	}
 
+	function renderBooleanToggle(question, value) {
+		const labels = getBooleanLabels(question, {
+			trueLabel: translate("yes"),
+			falseLabel: translate("no")
+		});
+		const state = value === true ? "true" : value === false ? "false" : "unset";
+		const choices = [
+			{ value: true, text: labels.trueLabel },
+			{ value: false, text: labels.falseLabel }
+		];
+
+		return el("div", { class: "ps-boolean-toggle", dataset: { state } }, choices.map((choice) => {
+			const selected = value === choice.value;
+			return el("button", {
+				class: selected ? "ps-boolean-option is-selected" : "ps-boolean-option",
+				type: "button",
+				"aria-pressed": selected ? "true" : "false",
+				onclick: () => answer(question.name, choice.value),
+				text: choice.text
+			});
+		}));
+	}
+
 	function renderImageChoices(question, value) {
 		const compareMode = question.type === "imageCompare";
 		return el("div", { class: ui.imageGrid }, (question.choices || []).map((choice) => {
@@ -325,25 +351,40 @@ export function createSurveyRenderer(options = {}) {
 
 	function renderRanking(question, value) {
 		const order = normalizeRankingOrder(question, value);
+		let draggedValue = null;
 
-		return el("ol", { class: ui.optionList }, order.map((choiceValue, index) => {
+		return el("ol", { class: `${ui.optionList} ps-ranking-list` }, order.map((choiceValue, index) => {
 			const choice = question.choices.find((item) => item.value === choiceValue);
-			return el("li", { class: ui.optionLabel }, [
-				`${index + 1}. ${choice?.text || choiceValue}`,
-				el("button", {
-					class: ui.button,
-					type: "button",
-					disabled: index === 0,
-					onclick: () => answer(question.name, move(order, index, index - 1)),
-					text: translate("up")
-				}),
-				el("button", {
-					class: ui.button,
-					type: "button",
-					disabled: index === order.length - 1,
-					onclick: () => answer(question.name, move(order, index, index + 1)),
-					text: translate("down")
-				})
+			return el("li", {
+				class: `${ui.optionLabel} ps-ranking-item`,
+				draggable: true,
+				dataset: { choiceValue },
+				ondragstart: (event) => {
+					draggedValue = choiceValue;
+					event.dataTransfer?.setData("text/plain", choiceValue);
+					if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+					event.currentTarget.classList.add("is-dragging");
+				},
+				ondragend: (event) => {
+					draggedValue = null;
+					event.currentTarget.classList.remove("is-dragging");
+				},
+				ondragover: (event) => {
+					event.preventDefault();
+					if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+				},
+				ondrop: (event) => {
+					event.preventDefault();
+					const sourceValue = draggedValue || event.dataTransfer?.getData("text/plain");
+					if (!sourceValue || sourceValue === choiceValue) return;
+					const fromIndex = order.indexOf(sourceValue);
+					const toIndex = order.indexOf(choiceValue);
+					if (fromIndex < 0 || toIndex < 0) return;
+					answer(question.name, move(order, fromIndex, toIndex));
+				}
+			}, [
+				el("span", { class: "ps-ranking-text", text: `${index + 1}. ${choice?.text || choiceValue}` }),
+				el("span", { class: "ps-ranking-handle", text: "::" })
 			]);
 		}));
 	}
@@ -373,10 +414,29 @@ export function createSurveyRenderer(options = {}) {
 	}
 
 	function renderCodeBlock(question) {
+		const language = normalizeCodeLanguage(question.language);
+		const languageLabel = languageName(language);
+		const highlightedCode = highlightCode(question.code || "", language);
+
 		return el("article", { class: ui.codeBlock, "data-question-name": question.name }, [
 			el("h3", { class: ui.label, text: question.title }),
 			question.description ? el("p", { class: ui.description, text: question.description }) : null,
-			el("pre", {}, [el("code", { text: question.code || "" })])
+			el("div", { class: "ps-code-terminal", dataset: { language } }, [
+				el("div", { class: "ps-code-terminal-bar" }, [
+					el("span", { class: "ps-code-terminal-lights", "aria-hidden": "true" }, [
+						el("span", { class: "ps-code-light ps-code-light-close" }),
+						el("span", { class: "ps-code-light ps-code-light-minimize" }),
+						el("span", { class: "ps-code-light ps-code-light-maximize" })
+					]),
+					el("span", { class: "ps-code-terminal-title", text: languageLabel })
+				]),
+				el("pre", { class: "ps-code-pre" }, [
+					el("code", {
+						class: `ps-code ps-lang-${language}`,
+						html: highlightedCode
+					})
+				])
+			])
 		]);
 	}
 
@@ -455,6 +515,163 @@ function move(items, fromIndex, toIndex) {
 	const [item] = nextItems.splice(fromIndex, 1);
 	nextItems.splice(toIndex, 0, item);
 	return nextItems;
+}
+
+const CODE_LANGUAGE_ALIASES = {
+	js: "javascript",
+	ts: "javascript",
+	tsx: "javascript",
+	jsx: "javascript",
+	jsonc: "json",
+	shell: "bash",
+	sh: "bash",
+	zsh: "bash",
+	html: "html",
+	xml: "html",
+	scss: "css",
+	py: "python",
+	yml: "yaml",
+	plaintext: "text",
+	txt: "text"
+};
+
+const CODE_LANGUAGE_LABELS = {
+	javascript: "JavaScript",
+	json: "JSON",
+	bash: "Shell",
+	python: "Python",
+	html: "HTML",
+	css: "CSS",
+	sql: "SQL",
+	yaml: "YAML",
+	text: "Text"
+};
+
+const CODE_HIGHLIGHT_RULES = {
+	javascript: [
+		{ name: "comment", regex: /^\/\/.*$/ },
+		{ name: "string", regex: /^(?:`(?:\\.|[^`\\])*`|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/ },
+		{ name: "keyword", regex: /^(?:\b(?:const|let|var|function|return|if|else|for|while|switch|case|break|continue|import|from|export|default|class|extends|new|try|catch|finally|throw|await|async)\b)/ },
+		{ name: "boolean", regex: /^(?:\b(?:true|false|null|undefined)\b)/ },
+		{ name: "number", regex: /^(?:\b\d+(?:\.\d+)?\b)/ },
+		{ name: "function", regex: /^(?:\b[A-Za-z_$][\w$]*(?=\())/ },
+		{ name: "operator", regex: /^(?:===|!==|==|!=|<=|>=|=>|\+\+|--|\|\||&&|[+\-*/%<>!=]+)/ },
+		{ name: "punctuation", regex: /^(?:[{}()[\].,;:])/ }
+	],
+	json: [
+		{ name: "property", regex: /^(?:"(?:\\.|[^"\\])*")(?=\s*:)/ },
+		{ name: "string", regex: /^(?:"(?:\\.|[^"\\])*")/ },
+		{ name: "number", regex: /^(?:-?\b\d+(?:\.\d+)?(?:e[+-]?\d+)?\b)/i },
+		{ name: "boolean", regex: /^(?:\b(?:true|false|null)\b)/ },
+		{ name: "punctuation", regex: /^(?:[{}\[\],:])/ }
+	],
+	bash: [
+		{ name: "comment", regex: /^#.*/ },
+		{ name: "string", regex: /^(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/ },
+		{ name: "variable", regex: /^(?:\$(?:\{?[A-Za-z_][A-Za-z0-9_]*\}?|\d+|[@*?#!\-$]))/ },
+		{ name: "keyword", regex: /^(?:\b(?:if|then|fi|for|in|do|done|while|case|esac|function|exit|echo)\b)/ },
+		{ name: "command", regex: /^(?:\b(?:npm|pnpm|bun|node|git|cd|ls|cat|echo|curl|grep|sed|awk|docker|kubectl|make|python)\b)/ },
+		{ name: "operator", regex: /^(?:\|\||&&|[|&;<>])/ },
+		{ name: "number", regex: /^(?:\b\d+\b)/ }
+	],
+	python: [
+		{ name: "comment", regex: /^#.*/ },
+		{ name: "string", regex: /^(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/ },
+		{ name: "keyword", regex: /^(?:\b(?:def|return|if|elif|else|for|while|in|import|from|class|try|except|finally|with|as|pass|yield|await|async)\b)/ },
+		{ name: "boolean", regex: /^(?:\b(?:True|False|None)\b)/ },
+		{ name: "number", regex: /^(?:\b\d+(?:\.\d+)?\b)/ },
+		{ name: "function", regex: /^(?:\b[A-Za-z_][\w]*(?=\())/ },
+		{ name: "operator", regex: /^(?:==|!=|<=|>=|\+|\-|\*\*|\*|\/|%|=)/ },
+		{ name: "punctuation", regex: /^(?:[{}()[\].,:])/ }
+	],
+	html: [
+		{ name: "comment", regex: /^<!--.*?-->/ },
+		{ name: "tag", regex: /^(?:<\/?[A-Za-z][\w:-]*)/ },
+		{ name: "attribute", regex: /^(?:\b[A-Za-z_:][\w:.-]*(?=\=))/ },
+		{ name: "string", regex: /^(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/ },
+		{ name: "punctuation", regex: /^(?:[<>/=])/ }
+	],
+	css: [
+		{ name: "comment", regex: /^\/\*.*?\*\// },
+		{ name: "property", regex: /^(?:\b(?:color|background|display|position|padding|margin|border|font|grid|flex|width|height|content|box-shadow|transform|transition|opacity|gap|align-items|justify-content)\b(?=\s*:))/ },
+		{ name: "number", regex: /^(?:\b\d+(?:\.\d+)?(?:px|rem|em|%|vh|vw|s|ms)?\b)/ },
+		{ name: "keyword", regex: /^(?:\b(?:var|calc|clamp|auto|none|solid|relative|absolute|fixed|grid|flex|block|inline)\b)/ },
+		{ name: "selector", regex: /^(?:[#.]?[A-Za-z_-][\w-]*(?=\s*[,{]))/ },
+		{ name: "punctuation", regex: /^(?:[{}:;(),.])/ }
+	],
+	sql: [
+		{ name: "comment", regex: /^(?:--.*$)/ },
+		{ name: "string", regex: /^(?:'(?:''|[^'])*')/ },
+		{ name: "keyword", regex: /^(?:\b(?:select|from|where|join|left|right|inner|outer|on|group|by|order|insert|into|values|update|set|delete|limit|offset|as|and|or|not|null|create|table|drop|alter)\b)/i },
+		{ name: "number", regex: /^(?:\b\d+(?:\.\d+)?\b)/ },
+		{ name: "operator", regex: /^(?:<=|>=|<>|!=|=|<|>|\+|\-|\/|\*)/ },
+		{ name: "punctuation", regex: /^(?:[(),.;])/ }
+	],
+	yaml: [
+		{ name: "comment", regex: /^#.*/ },
+		{ name: "property", regex: /^(?:[A-Za-z0-9_-]+(?=\s*:))/ },
+		{ name: "string", regex: /^(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/ },
+		{ name: "boolean", regex: /^(?:\b(?:true|false|null|yes|no|on|off)\b)/i },
+		{ name: "number", regex: /^(?:-?\b\d+(?:\.\d+)?\b)/ },
+		{ name: "punctuation", regex: /^(?:[:\-])/ }
+	],
+	text: []
+};
+
+function normalizeCodeLanguage(language) {
+	const normalized = String(language || "text").trim().toLowerCase();
+	return CODE_LANGUAGE_ALIASES[normalized] || (CODE_HIGHLIGHT_RULES[normalized] ? normalized : "text");
+}
+
+function languageName(language) {
+	return CODE_LANGUAGE_LABELS[language] || "Text";
+}
+
+function highlightCode(code, language) {
+	const normalized = normalizeCodeLanguage(language);
+	const lines = String(code || "").replace(/\r\n?/g, "\n").split("\n");
+	return lines.map((line) => {
+		const highlightedLine = highlightCodeLine(line, normalized);
+		return `<span class="ps-code-line">${highlightedLine || "&nbsp;"}</span>`;
+	}).join("");
+}
+
+function highlightCodeLine(line, language) {
+	const rules = CODE_HIGHLIGHT_RULES[language] || CODE_HIGHLIGHT_RULES.text;
+	if (!rules.length) return escapeHtml(line);
+
+	let remaining = line;
+	const chunks = [];
+
+	while (remaining.length > 0) {
+		let matched = false;
+
+		for (const rule of rules) {
+			const match = remaining.match(rule.regex);
+			if (!match || !match[0]) continue;
+
+			chunks.push(`<span class="ps-token ps-token-${rule.name}">${escapeHtml(match[0])}</span>`);
+			remaining = remaining.slice(match[0].length);
+			matched = true;
+			break;
+		}
+
+		if (!matched) {
+			chunks.push(escapeHtml(remaining[0]));
+			remaining = remaining.slice(1);
+		}
+	}
+
+	return chunks.join("");
+}
+
+function escapeHtml(value) {
+	return String(value)
+		.replaceAll("&", "&amp;")
+		.replaceAll("<", "&lt;")
+		.replaceAll(">", "&gt;")
+		.replaceAll('"', "&quot;")
+		.replaceAll("'", "&#39;");
 }
 
 function el(tagName, attrs = {}, children = []) {

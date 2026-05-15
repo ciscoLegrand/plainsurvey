@@ -1,10 +1,12 @@
 import { createPage, createQuestion, normalizeSurvey } from "../core/index.js";
+import { createSurveyRenderer } from "../renderer/index.js";
 import { createTranslator, resolveLocale } from "../shared/i18n/index.js";
 import { captureFocus, restoreFocus } from "../shared/dom/focus.js";
+import { showToast } from "../shared/toast.js";
 import { stripUndefined } from "../utils/object.js";
 import { builderLocales } from "./locales/index.js";
 import { sampleSurvey } from "./sample-survey.js";
-import { renderBuilderView, takePendingBuilderFocus } from "./view.js";
+import { initializeBuilderInteractions, renderBuilderView, takePendingBuilderFocus } from "./view.js";
 
 export function createSurveyBuilder(options = {}) {
 	if (!options.target) throw new Error("createSurveyBuilder requires a target element.");
@@ -13,12 +15,21 @@ export function createSurveyBuilder(options = {}) {
 	const onChange = options.onChange;
 	const onOpenJson = options.onOpenJson;
 	let survey = normalizeSurvey(options.survey);
-	let locale = resolveLocale(options.locale || "en", builderLocales, "en");
+	let locale = resolveLocale(options.locale || "es", builderLocales, "es");
 	let overrides = options.messages?.builder;
 	let selectedConfigNode = { type: "survey" };
 	let selectedQuestionId = null;
+	let enteringQuestionId = null;
 	let questionDraft = createQuestion("text");
+	let activeBuilderView = "builder";
+	let jsonDraft = "";
+	let jsonError = "";
+	let jsonCopied = false;
+	let copyResetTimeout = null;
 	let destroyed = false;
+	let renderScheduled = false;
+	let renderTimeout = null;
+	let previewRenderer = null;
 
 	const state = {
 		get survey() {
@@ -30,15 +41,30 @@ export function createSurveyBuilder(options = {}) {
 		get selectedQuestionId() {
 			return selectedQuestionId;
 		},
+		get enteringQuestionId() {
+			return enteringQuestionId;
+		},
 		get questionDraft() {
 			return questionDraft;
+		},
+		get activeBuilderView() {
+			return activeBuilderView;
+		},
+		get jsonDraft() {
+			return jsonDraft || JSON.stringify(survey, null, 2);
+		},
+		get jsonError() {
+			return jsonError;
+		},
+		get jsonCopied() {
+			return jsonCopied;
 		}
 	};
 
 	const actions = {
-		updateSurvey(patch) {
+		updateSurvey(patch, options = {}) {
 			survey = normalizeSurvey({ ...survey, ...patch });
-			persistAndRender();
+			persist({ render: options.render ?? "survey" });
 		},
 		addPage() {
 			survey = normalizeSurvey({
@@ -57,12 +83,28 @@ export function createSurveyBuilder(options = {}) {
 			}
 			persistAndRender();
 		},
-		updatePage(pageId, patch) {
+		clonePage(pageId) {
+			const pageIndex = survey.pages.findIndex((page) => page.id === pageId);
+			if (pageIndex === -1) return;
+			const sourcePage = survey.pages[pageIndex];
+			const clonedPage = createPage(`${sourcePage.title} copy`, {
+				description: sourcePage.description,
+				elements: sourcePage.elements.map((question) => materializeQuestion(question))
+			});
+			survey = normalizeSurvey({
+				...survey,
+				pages: insertAt(survey.pages, clonedPage, pageIndex + 1)
+			});
+			selectedConfigNode = { type: "page", pageId: clonedPage.id };
+			selectedQuestionId = null;
+			persistAndRender();
+		},
+		updatePage(pageId, patch, options = {}) {
 			survey = normalizeSurvey({
 				...survey,
 				pages: survey.pages.map((page) => page.id === pageId ? { ...page, ...patch } : page)
 			});
-			persistAndRender();
+			persist({ render: options.render ?? "page", pageId });
 		},
 		movePage(pageId, targetIndex) {
 			const currentIndex = survey.pages.findIndex((page) => page.id === pageId);
@@ -91,6 +133,7 @@ export function createSurveyBuilder(options = {}) {
 					: page)
 			});
 			selectedQuestionId = question.id;
+			enteringQuestionId = question.id;
 			selectedConfigNode = { type: "question", questionId: question.id };
 			persistAndRender();
 		},
@@ -114,6 +157,7 @@ export function createSurveyBuilder(options = {}) {
 				})
 			});
 			selectedQuestionId = questionId;
+			enteringQuestionId = null;
 			selectedConfigNode = { type: "question", questionId };
 			persistAndRender();
 		},
@@ -128,9 +172,13 @@ export function createSurveyBuilder(options = {}) {
 				selectedConfigNode = { type: "page", pageId };
 			}
 			if (selectedQuestionId === questionId) selectedQuestionId = null;
+			if (enteringQuestionId === questionId) enteringQuestionId = null;
 			persistAndRender();
 		},
-		updateQuestion(pageId, questionId, patch) {
+		updateQuestion(pageId, questionId, patch, options = {}) {
+			const previousQuestion = survey.pages
+				.find((page) => page.id === pageId)
+				?.elements.find((question) => question.id === questionId);
 			survey = normalizeSurvey({
 				...survey,
 				pages: survey.pages.map((page) => page.id === pageId
@@ -142,32 +190,41 @@ export function createSurveyBuilder(options = {}) {
 						}
 					: page)
 			});
-			persistAndRender();
+			persist({
+				render: options.render ?? renderModeForQuestionPatch(previousQuestion, patch),
+				pageId,
+				questionId
+			});
 		},
 		selectQuestion(questionId) {
 			selectedQuestionId = questionId;
+			enteringQuestionId = null;
 			selectedConfigNode = { type: "question", questionId };
 			render();
 		},
 		selectConfigNode(node) {
 			selectedConfigNode = node;
 			selectedQuestionId = node.type === "question" ? node.questionId : null;
+			enteringQuestionId = null;
 			render();
 		},
 		selectQuestionType(type) {
 			questionDraft = createQuestion(type);
 			selectedConfigNode = { type: "draft" };
 			selectedQuestionId = null;
+			enteringQuestionId = null;
 			render();
 		},
 		updateQuestionDraft(patch) {
+			const previousQuestionDraft = questionDraft;
 			questionDraft = stripUndefined({ ...questionDraft, ...patch });
-			render();
+			if (renderModeForQuestionPatch(previousQuestionDraft, patch)) render();
 		},
 		loadSample() {
 			survey = normalizeSurvey(sampleSurvey);
 			selectedConfigNode = { type: "survey" };
 			selectedQuestionId = null;
+			enteringQuestionId = null;
 			persistAndRender();
 		},
 		resetSurvey() {
@@ -175,9 +232,55 @@ export function createSurveyBuilder(options = {}) {
 			questionDraft = createQuestion("text");
 			selectedConfigNode = { type: "survey" };
 			selectedQuestionId = null;
+			enteringQuestionId = null;
 			persistAndRender();
 		},
+		selectBuilderView(view) {
+			activeBuilderView = ["builder", "preview", "json"].includes(view) ? view : "builder";
+			if (activeBuilderView === "json") jsonDraft = JSON.stringify(survey, null, 2);
+			jsonError = "";
+			render();
+		},
+		updateJsonDraft(value) {
+			jsonDraft = value;
+			jsonError = "";
+			render();
+		},
+		saveSurveyJson() {
+			try {
+				survey = normalizeSurvey(JSON.parse(jsonDraft || "{}"));
+				jsonDraft = JSON.stringify(survey, null, 2);
+				jsonError = "";
+				showToast("JSON guardado", "success", 2200);
+				persistAndRender();
+			} catch (error) {
+				jsonError = error?.message || "Invalid JSON";
+				showToast("JSON inválido", "error", 3200);
+				render();
+			}
+		},
+		copySurveyJson() {
+			const value = jsonDraft || JSON.stringify(survey, null, 2);
+			const copied = globalThis.navigator?.clipboard?.writeText
+				? globalThis.navigator.clipboard.writeText(value)
+				: Promise.resolve();
+			copied
+				.then(() => showToast("JSON copiado", "success", 1800))
+				.catch(() => showToast("No se pudo copiar el JSON", "error", 2800));
+			jsonCopied = true;
+			if (copyResetTimeout) clearTimeout(copyResetTimeout);
+			copyResetTimeout = setTimeout(() => {
+				jsonCopied = false;
+				copyResetTimeout = null;
+				if (!destroyed) render();
+			}, 500);
+			render();
+		},
 		openJson() {
+			activeBuilderView = "json";
+			jsonDraft = JSON.stringify(survey, null, 2);
+			jsonError = "";
+			render();
 			onOpenJson?.(survey);
 		}
 	};
@@ -201,43 +304,208 @@ export function createSurveyBuilder(options = {}) {
 
 	function render() {
 		if (destroyed) return;
+		previewRenderer?.destroy?.();
+		previewRenderer = null;
 		const pendingKey = takePendingBuilderFocus();
 		const focusSnapshot = pendingKey ? null : captureFocus(target);
 		const panelScrollSnapshot = capturePanelScroll(target);
+		const root = buildBuilderRoot();
+		target.replaceChildren(root);
+		const previewTarget = target.querySelector("[data-builder-runtime-preview]");
+		if (previewTarget) {
+			previewRenderer = createSurveyRenderer({
+				target: previewTarget,
+				survey,
+				locale
+			});
+		}
+		restorePanelScroll(target, panelScrollSnapshot);
+		restoreBuilderFocus(target, pendingKey, focusSnapshot);
+		enteringQuestionId = null;
+	}
+
+	function persistAndRender() {
+		persist({ render: true });
+	}
+
+	function persist({ render: shouldRender = false, pageId, questionId } = {}) {
+		emit();
+		if (shouldRender === "question") scheduleQuestionRender(pageId, questionId);
+		else if (shouldRender === "page") schedulePageRender(pageId);
+		else if (shouldRender === "survey") scheduleSurveyRender();
+		else if (shouldRender) scheduleRender();
+	}
+
+	function scheduleRender() {
+		if (renderScheduled) return;
+		renderScheduled = true;
+		if (renderTimeout) clearTimeout(renderTimeout);
+		renderTimeout = setTimeout(() => {
+			renderScheduled = false;
+			renderTimeout = null;
+			render();
+		}, 32);  // ~30fps debounce for smooth editing
+	}
+
+	function scheduleQuestionRender(pageId, questionId) {
+		if (!pageId || !questionId || activeBuilderView !== "builder") {
+			scheduleRender();
+			return;
+		}
+		if (renderScheduled) return;
+		renderScheduled = true;
+		if (renderTimeout) clearTimeout(renderTimeout);
+		renderTimeout = setTimeout(() => {
+			renderScheduled = false;
+			renderTimeout = null;
+			renderQuestionScope(pageId, questionId);
+		}, 32);
+	}
+
+	function schedulePageRender(pageId) {
+		if (!pageId || activeBuilderView !== "builder") {
+			scheduleRender();
+			return;
+		}
+		scheduleScopedRender(() => renderPageScope(pageId));
+	}
+
+	function scheduleSurveyRender() {
+		if (activeBuilderView !== "builder") {
+			scheduleRender();
+			return;
+		}
+		scheduleScopedRender(renderSurveyScope);
+	}
+
+	function scheduleScopedRender(callback) {
+		if (renderScheduled) return;
+		renderScheduled = true;
+		if (renderTimeout) clearTimeout(renderTimeout);
+		renderTimeout = setTimeout(() => {
+			renderScheduled = false;
+			renderTimeout = null;
+			callback();
+		}, 32);
+	}
+
+	function renderQuestionScope(pageId, questionId) {
+		if (destroyed) return;
+		const currentRoot = target.firstElementChild;
+		if (!currentRoot) {
+			render();
+			return;
+		}
+
+		const pendingKey = takePendingBuilderFocus();
+		const focusSnapshot = pendingKey ? null : captureFocus(target);
+		const panelScrollSnapshot = capturePanelScroll(target);
+		const nextRoot = buildBuilderRoot({ initializeInteractions: false });
+		const escapedQuestionId = cssEscape(questionId);
+		const escapedPageId = cssEscape(pageId);
+		const currentQuestion = target.querySelector(`.preview-question[data-question-id="${escapedQuestionId}"]`);
+		const nextQuestion = nextRoot.querySelector(`.preview-question[data-question-id="${escapedQuestionId}"]`);
+		const currentPageHeading = target.querySelector(`.builder-canvas-page[data-page-id="${escapedPageId}"] > .section-heading`);
+		const nextPageHeading = nextRoot.querySelector(`.builder-canvas-page[data-page-id="${escapedPageId}"] > .section-heading`);
+		const currentProperties = target.querySelector(".properties-panel .builder-editor-card");
+		const nextProperties = nextRoot.querySelector(".properties-panel .builder-editor-card");
+
+		currentRoot.classList.add("is-patching");
+		if (currentQuestion && nextQuestion) currentQuestion.replaceWith(nextQuestion);
+		if (currentPageHeading && nextPageHeading) currentPageHeading.replaceWith(nextPageHeading);
+		if (currentProperties && nextProperties) currentProperties.replaceWith(nextProperties);
+		initializeBuilderInteractions(currentRoot, actions);
+		restorePanelScroll(target, panelScrollSnapshot);
+		restoreBuilderFocus(target, pendingKey, focusSnapshot);
+		requestAnimationFrameSafe(() => currentRoot.classList.remove("is-patching"));
+	}
+
+	function renderSurveyScope() {
+		if (destroyed) return;
+		const currentRoot = target.firstElementChild;
+		if (!currentRoot) {
+			render();
+			return;
+		}
+
+		const pendingKey = takePendingBuilderFocus();
+		const focusSnapshot = pendingKey ? null : captureFocus(target);
+		const panelScrollSnapshot = capturePanelScroll(target);
+		const nextRoot = buildBuilderRoot({ initializeInteractions: false });
+		const currentSurvey = target.querySelector(".builder-survey-block");
+		const nextSurvey = nextRoot.querySelector(".builder-survey-block");
+		const currentProperties = target.querySelector(".properties-panel .builder-editor-card");
+		const nextProperties = nextRoot.querySelector(".properties-panel .builder-editor-card");
+
+		currentRoot.classList.add("is-patching");
+		if (currentSurvey && nextSurvey) currentSurvey.replaceWith(nextSurvey);
+		if (selectedConfigNode?.type === "survey" && currentProperties && nextProperties) currentProperties.replaceWith(nextProperties);
+		initializeBuilderInteractions(currentRoot, actions);
+		restorePanelScroll(target, panelScrollSnapshot);
+		restoreBuilderFocus(target, pendingKey, focusSnapshot);
+		requestAnimationFrameSafe(() => currentRoot.classList.remove("is-patching"));
+	}
+
+	function renderPageScope(pageId) {
+		if (destroyed) return;
+		const currentRoot = target.firstElementChild;
+		if (!currentRoot) {
+			render();
+			return;
+		}
+
+		const pendingKey = takePendingBuilderFocus();
+		const focusSnapshot = pendingKey ? null : captureFocus(target);
+		const panelScrollSnapshot = capturePanelScroll(target);
+		const nextRoot = buildBuilderRoot({ initializeInteractions: false });
+		const escapedPageId = cssEscape(pageId);
+		const currentPage = target.querySelector(`.builder-canvas-page[data-page-id="${escapedPageId}"]`);
+		const nextPage = nextRoot.querySelector(`.builder-canvas-page[data-page-id="${escapedPageId}"]`);
+		const currentProperties = target.querySelector(".properties-panel .builder-editor-card");
+		const nextProperties = nextRoot.querySelector(".properties-panel .builder-editor-card");
+
+		currentRoot.classList.add("is-patching");
+		if (currentPage && nextPage) {
+			const currentHeading = currentPage.querySelector(":scope > .section-heading");
+			const nextHeading = nextPage.querySelector(":scope > .section-heading");
+			const currentSettings = currentPage.querySelector(":scope > .page-settings-inline");
+			const nextSettings = nextPage.querySelector(":scope > .page-settings-inline");
+			if (currentHeading && nextHeading) currentHeading.replaceWith(nextHeading);
+			if (currentSettings && nextSettings) currentSettings.replaceWith(nextSettings);
+		}
+		if (selectedConfigNode?.type === "page" && selectedConfigNode.pageId === pageId && currentProperties && nextProperties) {
+			currentProperties.replaceWith(nextProperties);
+		}
+		initializeBuilderInteractions(currentRoot, actions);
+		restorePanelScroll(target, panelScrollSnapshot);
+		restoreBuilderFocus(target, pendingKey, focusSnapshot);
+		requestAnimationFrameSafe(() => currentRoot.classList.remove("is-patching"));
+	}
+
+	function buildBuilderRoot(options = {}) {
 		const localePack = builderLocales[locale] || builderLocales.en;
 		const root = renderBuilderView(state, actions, {
 			t: translate,
 			typeLabels: localePack.typeLabels,
 			typeSummaries: localePack.typeSummaries,
 			operatorLabels: localePack.operatorLabels
-		});
+		}, options);
 		localizeBuilderDom(root, locale, translate);
-		target.replaceChildren(root);
-		restorePanelScroll(target, panelScrollSnapshot);
-		if (pendingKey) {
-			const escaped = pendingKey.replace(/[\\"]/g, "\\$&");
-			const control = target.querySelector(`[data-builder-focus-key="${escaped}"]`);
-			control?.focus?.({ preventScroll: true });
-			control?.scrollIntoView?.({ behavior: "instant", block: "nearest" });
-		} else {
-			restoreFocus(target, focusSnapshot);
-		}
-	}
-
-	function persistAndRender() {
-		emit();
-		render();
+		return root;
 	}
 
 	function update(nextOptions = {}) {
 		if (nextOptions.survey) survey = normalizeSurvey(nextOptions.survey);
-		if (nextOptions.locale) locale = resolveLocale(nextOptions.locale, builderLocales, "en");
+		if (nextOptions.locale) locale = resolveLocale(nextOptions.locale, builderLocales, "es");
 		if (nextOptions.messages?.builder) overrides = nextOptions.messages.builder;
 		render();
 	}
 
 	function destroy() {
 		destroyed = true;
+		if (copyResetTimeout) clearTimeout(copyResetTimeout);
+		previewRenderer?.destroy?.();
+		previewRenderer = null;
 		target.replaceChildren();
 	}
 
@@ -262,9 +530,9 @@ export function createBuilderDsl(config = {}) {
 }
 
 function capturePanelScroll(container) {
-	return Array.from(container.querySelectorAll(".side-panel[data-float-panel] .panel-scroll-body"))
+	return Array.from(container.querySelectorAll(".side-panel[data-sidebar-panel] .panel-scroll-body"))
 		.map((node) => ({
-			key: node.closest("[data-float-panel]")?.getAttribute("data-float-panel") || "",
+			key: node.closest("[data-sidebar-panel]")?.getAttribute("data-sidebar-panel") || "",
 			top: node.scrollTop,
 			left: node.scrollLeft
 		}))
@@ -274,11 +542,21 @@ function capturePanelScroll(container) {
 function restorePanelScroll(container, snapshot) {
 	if (!Array.isArray(snapshot) || snapshot.length === 0) return;
 	snapshot.forEach((entry) => {
-		const panel = container.querySelector(`.side-panel[data-float-panel="${entry.key.replace(/["\\]/g, "\\$&")}"] .panel-scroll-body`);
+		const panel = container.querySelector(`.side-panel[data-sidebar-panel="${entry.key.replace(/["\\]/g, "\\$&")}"] .panel-scroll-body`);
 		if (!panel) return;
 		panel.scrollTop = entry.top || 0;
 		panel.scrollLeft = entry.left || 0;
 	});
+}
+
+function restoreBuilderFocus(container, pendingKey, focusSnapshot) {
+	if (pendingKey) {
+		const control = container.querySelector(`[data-builder-focus-key="${cssEscape(pendingKey)}"]`);
+		control?.focus?.({ preventScroll: true });
+		control?.scrollIntoView?.({ behavior: "instant", block: "nearest" });
+		return;
+	}
+	restoreFocus(container, focusSnapshot);
 }
 
 function localizeBuilderDom(root, locale, t) {
@@ -372,6 +650,7 @@ function localizeBuilderDom(root, locale, t) {
 	});
 
 	root.querySelectorAll("button").forEach((node) => {
+		if (node.classList.contains("ps-boolean-option")) return;
 		const text = node.textContent.trim();
 		const translated = {
 			"Anadir pagina": t("addPage"),
@@ -403,16 +682,6 @@ function localizeBuilderDom(root, locale, t) {
 		if (node.textContent.trim() === "Correcta") node.textContent = t("choiceCorrect");
 	});
 
-	root.querySelectorAll(".tree-node-meta").forEach((node) => {
-		const text = node.textContent.trim();
-		if (/^\d+ paginas$/.test(text)) node.textContent = t("surveyCount", { count: text.match(/\d+/)?.[0] || "0" });
-		else if (/^Pagina \d+$/.test(text)) node.textContent = t("pageCounter", { index: text.match(/\d+/)?.[0] || "1" });
-		else {
-			const match = text.match(/^P(\d+)\.(\d+) · (.+)$/);
-			if (match) node.textContent = t("treeQuestionMeta", { page: match[1], question: match[2], type: translateTypeLabel(match[3], locale) });
-		}
-	});
-
 	root.querySelectorAll("[title]").forEach((node) => {
 		const text = node.getAttribute("title") || "";
 		if (text === "Minimizar") node.setAttribute("title", t("minimize"));
@@ -428,6 +697,7 @@ function localizeBuilderDom(root, locale, t) {
 	});
 
 	root.querySelectorAll("select").forEach((select) => {
+		if (select.dataset.keepBooleanLabels === "true") return;
 		const values = Array.from(select.options).map((option) => option.value);
 		const isTypeSelect = values.every((value) => !value || Object.prototype.hasOwnProperty.call(typeLabels, value));
 		const isOperatorSelect = values.every((value) => !value || Object.prototype.hasOwnProperty.call(operatorLabels, value));
@@ -470,4 +740,43 @@ function adjustMoveIndex(items, questionId, targetIndex) {
 	const currentIndex = items.findIndex((item) => item.id === questionId);
 	if (currentIndex === -1) return targetIndex;
 	return currentIndex < targetIndex ? targetIndex - 1 : targetIndex;
+}
+
+function renderModeForQuestionPatch(previousQuestion, patch) {
+	if (!previousQuestion || !patch || typeof patch !== "object") return true;
+	if (patch.type !== undefined && patch.type !== previousQuestion.type) return true;
+
+	const nextQuestion = stripUndefined({ ...previousQuestion, ...patch });
+	if (hasCollectionSizeChanged(previousQuestion.choices, nextQuestion.choices)) return "question";
+	if (hasCollectionSizeChanged(previousQuestion.rows, nextQuestion.rows)) return "question";
+	if (hasCollectionSizeChanged(previousQuestion.columns, nextQuestion.columns)) return "question";
+	if (hasCollectionSizeChanged(previousQuestion.elements, nextQuestion.elements)) return "question";
+	if (hasNestedQuestionTypeChanged(previousQuestion.elements, nextQuestion.elements)) return "question";
+	if (Boolean(previousQuestion.scoring?.enabled) !== Boolean(nextQuestion.scoring?.enabled)) return "question";
+	if (Boolean(previousQuestion.visibleIf?.question) !== Boolean(nextQuestion.visibleIf?.question)) return "question";
+
+	return false;
+}
+
+function hasCollectionSizeChanged(previousItems = [], nextItems = []) {
+	if (!Array.isArray(previousItems) && !Array.isArray(nextItems)) return false;
+	return (previousItems?.length || 0) !== (nextItems?.length || 0);
+}
+
+function hasNestedQuestionTypeChanged(previousItems = [], nextItems = []) {
+	if (!Array.isArray(previousItems) || !Array.isArray(nextItems)) return false;
+	return previousItems.some((item, index) => item?.type !== nextItems[index]?.type);
+}
+
+function cssEscape(value) {
+	if (globalThis.CSS?.escape) return CSS.escape(value);
+	return String(value).replace(/["\\]/g, "\\$&");
+}
+
+function requestAnimationFrameSafe(callback) {
+	if (typeof globalThis.requestAnimationFrame === "function") {
+		globalThis.requestAnimationFrame(callback);
+		return;
+	}
+	setTimeout(callback, 0);
 }

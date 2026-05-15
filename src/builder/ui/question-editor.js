@@ -10,7 +10,7 @@ export function renderQuestionEditor(survey, page, question, questionIndex, acti
   const isDraft = options.mode === "draft";
   const update = (patch) => {
     if (isDraft) actions.updateQuestionDraft(patch);
-    else actions.updateQuestion(page.id, question.id, patch);
+    else actions.updateQuestion(page.id, question.id, patch, { render: "question" });
   };
   const removeButton = isDraft ? null : el("button", {
     class: "icon-button",
@@ -31,7 +31,7 @@ export function renderQuestionEditor(survey, page, question, questionIndex, acti
     ]),
     isDraft ? el("p", { class: "muted", text: "Configura este tipo y usa los botones + del preview para insertarlo en una pagina." }) : null,
     el("div", { class: "builder-form-card form-grid builder-question-basics" }, [
-      field("Tipo", select(question.type, QUESTION_TYPES, (type) => {
+      field(t("type", {}, "Tipo"), select(question.type, QUESTION_TYPES, (type) => {
         const next = {
           ...createQuestion(type),
           id: question.id,
@@ -43,16 +43,17 @@ export function renderQuestionEditor(survey, page, question, questionIndex, acti
         };
         update(next);
       })),
-      field("Nombre tecnico", input(question.name, (value) => update({ name: slugName(value) }))),
-      field("Titulo", input(question.title, (value) => update({ title: value }))),
-      field("Obligatoria", el("input", {
+      field(t("technicalName", {}, "Nombre tecnico"), input(question.name, (value) => update({ name: slugName(value) }), { "aria-label": t("questionNameAria", {}, "Nombre tecnico de la pregunta") })),
+      field(t("questionTitle", {}, "Titulo de pregunta"), input(question.title, (value) => update({ title: value }), { "aria-label": t("questionTitleAria", {}, "Titulo de la pregunta") })),
+      field(t("required", {}, "Obligatoria"), el("input", {
         type: "checkbox",
         checked: question.required,
+        "aria-label": t("questionRequiredAria", {}, "Pregunta obligatoria"),
         onchange: (event) => update({ required: event.target.checked })
       }))
     ]),
     el("div", { class: "builder-form-card builder-form-stack" }, [
-      field("Descripcion", textarea(question.description, (value) => update({ description: value }), { rows: 2 }))
+      field(t("questionDescription", {}, "Descripcion de pregunta"), textarea(question.description, (value) => update({ description: value }), { rows: 2, "aria-label": t("questionDescriptionAria", {}, "Descripcion de la pregunta") }))
     ]),
     renderTypeOptions(question, t, update),
     renderScoringEditor(question, update, t),

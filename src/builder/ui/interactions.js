@@ -1,187 +1,156 @@
-// Lazy-load @atlaskit only when needed to avoid Vite build failures
+// Lazy-load @atlaskit only when needed
 let draggable, dropTargetForElements, monitorForElements, combine;
-let atlaskitReady = false;
+let atlaskitLoadPromise = null;
 
 async function ensureAtlaskitLoaded() {
-  if (atlaskitReady) return;
-  try {
-    // Use string concatenation to prevent Vite from statically analyzing this import
-    const pkgName = "@atlaskit" + "/" + "pragmatic-drag-and-drop";
-    const module = await import(pkgName);
-    draggable = module.draggable;
-    dropTargetForElements = module.dropTargetForElements;
-    monitorForElements = module.monitorForElements;
-    combine = module.combine;
-    atlaskitReady = true;
-  } catch (err) {
-    console.warn("[plainsurvey] @atlaskit/pragmatic-drag-and-drop failed to load:", err);
-  }
+  if (draggable && dropTargetForElements && monitorForElements && combine) return true;
+
+  atlaskitLoadPromise ??= import("@atlaskit/pragmatic-drag-and-drop")
+    .then((module) => {
+      draggable = module.draggable;
+      dropTargetForElements = module.dropTargetForElements;
+      monitorForElements = module.monitorForElements;
+      combine = module.combine;
+      return true;
+    })
+    .catch((err) => {
+      atlaskitLoadPromise = null;
+      console.warn("[plainsurvey] @atlaskit/pragmatic-drag-and-drop failed to load:", err);
+      return false;
+    });
+
+  return atlaskitLoadPromise;
 }
 
 let cleanupDragAndDrop = null;
-let cleanupFloatingPanels = null;
-// Positions persisted across re-renders (keyed by storageKey) so panels don't jump.
-const panelPositionCache = new Map();
+let cleanupSidebarPanels = null;
+let cleanupNativeDragAndDrop = null;
 
 export function initializeBuilderInteractions(root, actions) {
-  // Start loading @atlaskit in background without blocking
-  ensureAtlaskitLoaded();
-  
-  // Small delay to allow @atlaskit to load; if it's not ready yet, drag-and-drop will be unavailable
-  // but the UI will still render. On next initialization (after re-render), it will likely be ready.
-  setTimeout(() => {
-    if (atlaskitReady) {
-      setupDragAndDrop(root, actions);
-    }
-  }, 50);
-  
-  setupFloatingPanels(root);
+  setupSidebarPanels(root);
+  setupNativeDragAndDrop(root, actions);
 }
 
-function setupFloatingPanels(root) {
-  // Only clean up event listeners — do NOT touch inline styles of old panels.
-  // Panels are about to be replaced by replaceChildren(); resetting their styles
-  // causes a 1-frame visual jump (CSS kicks in for that frame before replacement).
-  cleanupFloatingPanels?.();
+function setupSidebarPanels(root) {
+  cleanupSidebarPanels?.();
   const storage = globalThis.localStorage;
-
-  const usesFloatingPanels = ["modern", "full"].includes(document.documentElement.getAttribute("data-layout")) && window.innerWidth > 920;
-  if (!usesFloatingPanels) {
-    cleanupFloatingPanels = null;
-    return;
-  }
-
-  const toolboxWidth = clampNumber(Math.round(window.innerWidth * 0.18), 250, 360);
-  const propertiesWidth = clampNumber(Math.round(window.innerWidth * 0.18), 320, 430);
-  const panelTop = resolveFloatingPanelTop();
-  const sideInset = Math.max(10, Math.round(window.innerWidth * 0.01));
-
-  const panels = [
-    {
-      panel: root.querySelector("[data-float-panel='toolbox']"),
-      handle: root.querySelector("[data-panel-handle='toolbox']"),
-      storageKey: "survey-lite.float.toolbox",
-      width: toolboxWidth,
-      fallback: { left: sideInset, top: panelTop }
-    },
-    {
-      panel: root.querySelector("[data-float-panel='properties']"),
-      handle: root.querySelector("[data-panel-handle='properties']"),
-      storageKey: "survey-lite.float.properties",
-      width: propertiesWidth,
-      fallback: { left: Math.max(sideInset, window.innerWidth - propertiesWidth - sideInset), top: panelTop }
-    }
-  ].filter((item) => item.panel && item.handle);
-
+  const panels = Array.from(root.querySelectorAll("[data-sidebar-panel]"));
   const cleanups = [];
 
-  panels.forEach((item) => {
-    const { panel, handle, storageKey, fallback, width } = item;
-    panel.classList.add("is-floating-panel");
-    panel.classList.remove("is-minimized");
-    panel.style.width = `${width}px`;
+  panels.forEach((panel) => {
+    const key = panel.dataset.sidebarPanel;
+    const button = panel.querySelector(`[data-toggle-sidebar="${key}"]`);
+    const storageKey = `plainsurvey.sidebar.${key}.collapsed`;
+    const isCollapsed = storage?.getItem?.(storageKey) === "true";
 
-    // Priority: in-memory cache (survives re-renders) > localStorage > fallback.
-    let position = fallback;
-    if (panelPositionCache.has(storageKey)) {
-      position = panelPositionCache.get(storageKey);
-    } else {
-      const raw = storage?.getItem?.(storageKey);
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw);
-          if (Number.isFinite(parsed.left) && Number.isFinite(parsed.top)) {
-            position = parsed;
-          }
-        } catch {
-          // Ignore invalid stored position.
-        }
-      }
-    }
+    panel.classList.toggle("is-collapsed", isCollapsed);
+    button?.setAttribute("aria-expanded", String(!isCollapsed));
 
-    const applyPosition = (next) => {
-      const maxLeft = Math.max(sideInset, window.innerWidth - width - sideInset);
-      const maxTop = Math.max(panelTop, window.innerHeight - 180);
-      const left = Math.min(Math.max(sideInset, next.left), maxLeft);
-      const top = Math.min(Math.max(panelTop, next.top), maxTop);
-      panel.style.left = `${left}px`;
-      panel.style.top = `${top}px`;
-      panel.style.right = "auto";
-      position = { left, top };
-      panelPositionCache.set(storageKey, position);
+    if (!button) return;
+
+    const onClick = (event) => {
+      event.stopPropagation();
+      const nextCollapsed = !panel.classList.contains("is-collapsed");
+      panel.classList.toggle("is-collapsed", nextCollapsed);
+      button.setAttribute("aria-expanded", String(!nextCollapsed));
+      storage?.setItem?.(storageKey, String(nextCollapsed));
     };
 
-    applyPosition(position);
-
-    const minimizeBtn = handle.querySelector(".panel-minimize-btn");
-    if (minimizeBtn) {
-      minimizeBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-      });
-      cleanups.push(() => {});
-    }
-
-    const onPointerDown = (event) => {
-      if (event.button !== 0) return;
-      event.preventDefault();
-      handle.setPointerCapture?.(event.pointerId);
-      panel.classList.add("is-dragging-panel");
-
-      const startX = event.clientX;
-      const startY = event.clientY;
-      const start = { ...position };
-
-      const onMove = (moveEvent) => {
-        applyPosition({
-          left: start.left + moveEvent.clientX - startX,
-          top: start.top + moveEvent.clientY - startY
-        });
-      };
-
-      const onUp = () => {
-        panel.classList.remove("is-dragging-panel");
-        handle.releasePointerCapture?.(event.pointerId);
-        storage?.setItem?.(storageKey, JSON.stringify(position));
-        window.removeEventListener("pointermove", onMove);
-        window.removeEventListener("pointerup", onUp);
-      };
-
-      window.addEventListener("pointermove", onMove);
-      window.addEventListener("pointerup", onUp);
-    };
-
-    handle.addEventListener("pointerdown", onPointerDown);
-    cleanups.push(() => handle.removeEventListener("pointerdown", onPointerDown));
+    button.addEventListener("click", onClick);
+    cleanups.push(() => button.removeEventListener("click", onClick));
   });
 
-  cleanupFloatingPanels = () => {
-    // Only remove event listeners. Do NOT touch inline styles — panels are
-    // being replaced by replaceChildren() so resetting styles causes a
-    // 1-frame position jump as CSS takes over before the DOM swap.
+  cleanupSidebarPanels = () => {
     cleanups.forEach((cleanup) => cleanup());
   };
 }
 
-function resolveFloatingPanelTop() {
-  const cssValue = typeof getComputedStyle === "function"
-    ? Number.parseInt(getComputedStyle(document.documentElement).getPropertyValue("--ps-panel-top"), 10)
-    : 76;
-  const baseTop = Number.isFinite(cssValue) ? cssValue : 76;
+function setupNativeDragAndDrop(root, actions) {
+  cleanupNativeDragAndDrop?.();
+  const cleanups = [];
+  let dragData = null;
 
-  const routeToolbar = document.querySelector(".plainsurveyRoute .plainsurveyToolbar");
-  if (!routeToolbar) return baseTop;
+  const draggables = Array.from(root.querySelectorAll("[data-drag-kind='palette'], [data-drag-kind='question']"));
+  draggables.forEach((element) => {
+    element.setAttribute("draggable", "true");
 
-  return Math.max(baseTop, Math.round(routeToolbar.getBoundingClientRect().bottom + 10));
-}
+    const onDragStart = (event) => {
+      dragData = element.dataset.dragKind === "palette"
+        ? { builderDrag: "palette", questionType: element.dataset.questionType }
+        : {
+            builderDrag: "question",
+            pageId: element.dataset.pageId,
+            questionId: element.dataset.questionId
+          };
+      element.classList.add("is-dragging");
+      event.dataTransfer?.setData?.("application/x-plainsurvey-builder", JSON.stringify(dragData));
+      event.dataTransfer?.setData?.("text/plain", dragData.questionType || dragData.questionId || "");
+      if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+    };
 
-function clampNumber(value, min, max) {
-  return Math.min(Math.max(value, min), max);
+    const onDragEnd = () => {
+      element.classList.remove("is-dragging");
+      root.querySelectorAll(".question-dropzone.is-over").forEach((dropzone) => dropzone.classList.remove("is-over"));
+      dragData = null;
+    };
+
+    element.addEventListener("dragstart", onDragStart);
+    element.addEventListener("dragend", onDragEnd);
+    cleanups.push(() => element.removeEventListener("dragstart", onDragStart));
+    cleanups.push(() => element.removeEventListener("dragend", onDragEnd));
+  });
+
+  Array.from(root.querySelectorAll(".question-dropzone")).forEach((element) => {
+    const readDragData = (event) => {
+      const raw = event.dataTransfer?.getData?.("application/x-plainsurvey-builder");
+      if (!raw) return dragData;
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return dragData;
+      }
+    };
+
+    const onDragOver = (event) => {
+      const data = readDragData(event);
+      if (!data || !["palette", "question"].includes(data.builderDrag)) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+      element.classList.add("is-over");
+    };
+    const onDragLeave = () => element.classList.remove("is-over");
+    const onDrop = (event) => {
+      const data = readDragData(event);
+      element.classList.remove("is-over");
+      if (!data || !["palette", "question"].includes(data.builderDrag)) return;
+      event.preventDefault();
+
+      const pageId = element.dataset.pageId;
+      const insertIndex = Number(element.dataset.insertIndex);
+      if (data.builderDrag === "palette") {
+        actions.insertQuestion(pageId, data.questionType, insertIndex);
+        return;
+      }
+      actions.moveQuestion(data.pageId, data.questionId, pageId, insertIndex);
+    };
+
+    element.addEventListener("dragover", onDragOver);
+    element.addEventListener("dragleave", onDragLeave);
+    element.addEventListener("drop", onDrop);
+    cleanups.push(() => element.removeEventListener("dragover", onDragOver));
+    cleanups.push(() => element.removeEventListener("dragleave", onDragLeave));
+    cleanups.push(() => element.removeEventListener("drop", onDrop));
+  });
+
+  cleanupNativeDragAndDrop = () => {
+    cleanups.forEach((cleanup) => cleanup());
+  };
 }
 
 function setupDragAndDrop(root, actions) {
-  // Validate that @atlaskit has loaded before setting up drag-and-drop
-  if (!atlaskitReady || !draggable || !combine) {
-    console.warn("[plainsurvey] @atlaskit/pragmatic-drag-and-drop not yet loaded, drag-and-drop disabled");
+  cleanupDragAndDrop?.();
+
+  if (!draggable || !dropTargetForElements || !monitorForElements || !combine) {
     cleanupDragAndDrop = null;
     return;
   }

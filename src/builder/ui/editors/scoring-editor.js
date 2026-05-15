@@ -1,3 +1,4 @@
+import { getBooleanLabels } from "../../../core/schema.js";
 import { field, input, select, textarea, el } from "../../dom.js";
 import {
   createDefaultScoring,
@@ -41,6 +42,7 @@ export function renderScoringEditor(question, onUpdate, t) {
           type: "number",
           min: "0",
           step: "1",
+          "aria-label": "Puntuacion o score",
           dataset: { builderFocusKey: `${scoringFocusBase}:score` }
         })),
         field("Peso", input(scoring.weight, (value) => {
@@ -50,6 +52,7 @@ export function renderScoringEditor(question, onUpdate, t) {
           type: "number",
           min: "0",
           step: "0.1",
+          "aria-label": "Peso o ponderacion",
           dataset: { builderFocusKey: `${scoringFocusBase}:weight` }
         }))
       ]),
@@ -79,14 +82,19 @@ function renderCorrectAnswerEditor(question, scoring, onUpdate, focusBase, t) {
       requestBuilderFocus(`${focusBase}:correctAnswer`);
       updateScoring(question, onUpdate, { correctAnswer: value });
     }, {
-      dataset: { builderFocusKey: `${focusBase}:correctAnswer` }
+      dataset: { builderFocusKey: `${focusBase}:correctAnswer`, keepBooleanLabels: "true" }
     }));
   }
 
   if (question.type === "boolean") {
+    const labels = getBooleanLabels(question, {
+      trueLabel: t("yes", {}, "Si"),
+      falseLabel: t("no", {}, "No")
+    });
+
     return field("Respuesta correcta", select(String(scoring.correctAnswer), [
-      { value: "true", label: "Si" },
-      { value: "false", label: "No" }
+      { value: "true", label: labels.trueLabel },
+      { value: "false", label: labels.falseLabel }
     ], (value) => {
       requestBuilderFocus(`${focusBase}:correctAnswer`);
       updateScoring(question, onUpdate, { correctAnswer: value === "true" });
@@ -140,6 +148,7 @@ function renderCorrectAnswerEditor(question, scoring, onUpdate, focusBase, t) {
     requestBuilderFocus(`${focusBase}:correctAnswer`);
     updateScoring(question, onUpdate, { correctAnswer: value });
   }, {
+    "aria-label": "Respuesta correcta para esta opcion",
     dataset: { builderFocusKey: `${focusBase}:correctAnswer` }
   }));
 }

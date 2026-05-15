@@ -139,6 +139,101 @@ test("renderer renders all supported question types", () => {
   assert.match(target.textContent, /Nested/);
 });
 
+test("renderer uses custom boolean labels in a sliding toggle", () => {
+  const { target } = setupDom();
+  const changes = [];
+
+  createSurveyRenderer({
+    target,
+    survey: {
+      title: "Binary",
+      pages: [
+        {
+          title: "Binary",
+          elements: [
+            {
+              name: "contrast",
+              type: "boolean",
+              title: "Contrast",
+              trueLabel: "Blanco",
+              falseLabel: "Negro"
+            }
+          ]
+        }
+      ]
+    },
+    onChange: (event) => changes.push(event)
+  });
+
+  const toggle = target.querySelector(".ps-boolean-toggle");
+  assert.ok(toggle);
+  assert.equal(toggle.dataset.state, "unset");
+  assert.match(toggle.textContent, /Blanco/);
+  assert.match(toggle.textContent, /Negro/);
+
+  target.querySelectorAll(".ps-boolean-option")[1].click();
+
+  const nextToggle = target.querySelector(".ps-boolean-toggle");
+  assert.equal(nextToggle.dataset.state, "false");
+  assert.equal(changes.at(-1).value, false);
+  assert.deepEqual(changes.at(-1).answers, { contrast: false });
+});
+
+test("ranking question renders draggable options without up/down buttons", () => {
+  const { target } = setupDom();
+
+  createSurveyRenderer({
+    target,
+    survey: {
+      title: "Ranking",
+      pages: [
+        {
+          title: "Ranking",
+          elements: [
+            { name: "priority", type: "ranking", title: "Priority", choices: ["A", "B", "C"] }
+          ]
+        }
+      ]
+    }
+  });
+
+  const rankingItems = target.querySelectorAll(".ps-ranking-item");
+  assert.equal(rankingItems.length, 3);
+  assert.equal(target.querySelectorAll(".ps-ranking-handle").length, 3);
+  assert.equal(target.querySelectorAll(".ps-ranking-item button").length, 0);
+});
+
+test("code block renders terminal UI and syntax tokens", () => {
+  const { target } = setupDom();
+
+  createSurveyRenderer({
+    target,
+    survey: {
+      title: "Code",
+      pages: [
+        {
+          title: "Code",
+          elements: [
+            {
+              name: "snippet",
+              type: "codeBlock",
+              title: "Snippet",
+              language: "javascript",
+              code: "const total = 42; // demo"
+            }
+          ]
+        }
+      ]
+    }
+  });
+
+  assert.ok(target.querySelector(".ps-code-terminal"));
+  assert.ok(target.querySelector(".ps-code.ps-lang-javascript"));
+  assert.ok(target.querySelector(".ps-token.ps-token-keyword"));
+  assert.ok(target.querySelector(".ps-token.ps-token-number"));
+  assert.ok(target.querySelector(".ps-token.ps-token-comment"));
+});
+
 test("renderer applies UI overrides and destroy clears the target", () => {
   const { target } = setupDom();
 

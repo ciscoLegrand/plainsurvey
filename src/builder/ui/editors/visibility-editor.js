@@ -24,7 +24,7 @@ export function renderVisibilityEditor(survey, page, question, actions) {
           requestBuilderFocus(`${question.id}:visibility-toggle`);
           actions.updateQuestion(page.id, question.id, {
             visibleIf: event.target.checked ? rule : undefined
-          });
+          }, { render: "question" });
         }
       }),
       "Mostrar esta pregunta solo si se cumple una regla"
@@ -32,20 +32,21 @@ export function renderVisibilityEditor(survey, page, question, actions) {
     enabled ? el("div", { class: "form-grid" }, [
       field("Pregunta", select(rule.question, availableQuestions, (value) => {
         requestBuilderFocus(`${visibilityFocusBase}:question`);
-        actions.updateQuestion(page.id, question.id, { visibleIf: { ...rule, question: value } });
+        actions.updateQuestion(page.id, question.id, { visibleIf: { ...rule, question: value } }, { render: "question" });
       }, {
         dataset: { builderFocusKey: `${visibilityFocusBase}:question` }
       })),
       field("Operador", select(rule.operator, OPERATORS, (value) => {
         requestBuilderFocus(`${visibilityFocusBase}:operator`);
-        actions.updateQuestion(page.id, question.id, { visibleIf: { ...rule, operator: value } });
+        actions.updateQuestion(page.id, question.id, { visibleIf: { ...rule, operator: value } }, { render: "question" });
       }, {
         dataset: { builderFocusKey: `${visibilityFocusBase}:operator` }
       })),
       field("Valor", input(rule.value || "", (value) => {
         requestBuilderFocus(`${visibilityFocusBase}:value`);
-        actions.updateQuestion(page.id, question.id, { visibleIf: { ...rule, value } });
+        actions.updateQuestion(page.id, question.id, { visibleIf: { ...rule, value } }, { render: "question" });
       }, {
+        "aria-label": "Valor para condicion de visibilidad",
         dataset: { builderFocusKey: `${visibilityFocusBase}:value` }
       }))
     ]) : el("p", { class: "muted", text: availableQuestions.length ? "Activa la regla para configurar condiciones." : "Anade otra pregunta para usar condiciones." })

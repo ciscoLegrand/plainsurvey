@@ -1,4 +1,4 @@
-import { createQuestion, hasChoices, QUESTION_TYPES } from "../../../core/schema.js";
+import { createQuestion, getBooleanLabels, hasChoices, QUESTION_TYPES } from "../../../core/schema.js";
 import { el, field, input, select, textarea } from "../../dom.js";
 import { choiceHelpForType, remapScoringForChoices, updateRankingCorrectAnswer, updateScoring } from "../../scoring.js";
 import { requestBuilderFocus } from "../focus-state.js";
@@ -21,28 +21,40 @@ export function renderTypeOptions(question, t, onUpdate) {
   }
   if (question.type === "codeBlock") {
     return el("div", { class: "form-grid single" }, [
-      field("Lenguaje", input(question.language || "", (value) => onUpdate({ language: value }))),
-      field("Codigo", textarea(question.code || "", (value) => onUpdate({ code: value }), { rows: 8 }))
+      field("Lenguaje", input(question.language || "", (value) => onUpdate({ language: value }), { "aria-label": "Lenguaje de programacion", placeholder: "json, javascript, markdown..." })),
+      field("Codigo", textarea(question.code || "", (value) => onUpdate({ code: value }), { rows: 6, "aria-label": "Codigo fuente" }))
     ]);
   }
 
   if (question.type === "contentBlock") {
     return el("div", { class: "form-grid single" }, [
-      field("Cuerpo del bloque", textarea(question.body || "", (value) => onUpdate({ body: value }), { rows: 8 }), "Texto libre: historia, instrucciones, enunciado..."),
-      field("URL de imagen (opcional)", input(question.imageUrl || "", (value) => onUpdate({ imageUrl: value }), { type: "url", placeholder: "https://..." })),
-      field("Pie de imagen", input(question.imageCaption || "", (value) => onUpdate({ imageCaption: value })))
+      field("Cuerpo del bloque", textarea(question.body || "", (value) => onUpdate({ body: value }), { rows: 6, "aria-label": "Cuerpo del bloque de contenido" }), "Texto libre: historia, instrucciones, enunciado..."),
+      field("URL de imagen (opcional)", input(question.imageUrl || "", (value) => onUpdate({ imageUrl: value }), { type: "url", placeholder: "https://...", "aria-label": "URL de imagen" })),
+      field("Pie de imagen", input(question.imageCaption || "", (value) => onUpdate({ imageCaption: value }), { "aria-label": "Pie de imagen" }))
     ]);
   }
 
   if (question.type === "rating") {
     return el("div", { class: "form-grid" }, [
-      field("Minimo", input(question.rateMin, (value) => onUpdate({ rateMin: Number(value) || 1 }), { type: "number", min: "1" })),
-      field("Maximo", input(question.rateMax, (value) => onUpdate({ rateMax: Number(value) || 5 }), { type: "number", min: "2" }))
+      field("Minimo", input(question.rateMin, (value) => onUpdate({ rateMin: Number(value) || 1 }), { type: "number", min: "1", "aria-label": "Valor minimo de calificacion" })),
+      field("Maximo", input(question.rateMax, (value) => onUpdate({ rateMax: Number(value) || 5 }), { type: "number", min: "2", "aria-label": "Valor maximo de calificacion" }))
+    ]);
+  }
+
+  if (question.type === "boolean") {
+    const labels = getBooleanLabels(question, {
+      trueLabel: t("yes", {}, "Si"),
+      falseLabel: t("no", {}, "No")
+    });
+
+    return el("div", { class: "form-grid" }, [
+      field(t("booleanTrueLabel", {}, "Texto valor verdadero"), input(labels.trueLabel, (value) => onUpdate({ trueLabel: value }), { "aria-label": t("booleanTrueLabelAria", {}, "Texto del valor verdadero") })),
+      field(t("booleanFalseLabel", {}, "Texto valor falso"), input(labels.falseLabel, (value) => onUpdate({ falseLabel: value }), { "aria-label": t("booleanFalseLabelAria", {}, "Texto del valor falso") }))
     ]);
   }
 
   if (["text", "textarea"].includes(question.type)) {
-    return field("Placeholder", input(question.placeholder || "", (value) => onUpdate({ placeholder: value })));
+    return field("Placeholder", input(question.placeholder || "", (value) => onUpdate({ placeholder: value }), { "aria-label": "Texto de placeholder o sugerencia" }));
   }
 
   return el("div");
@@ -65,9 +77,9 @@ function renderEmojiChoices(question, onUpdate, t) {
     ]),
     scoringEnabled ? el("p", { class: "muted choice-help", text: t("emojiCorrectHelp", {}, "Marca aqui la cara correcta para esta pregunta puntuable.") }) : null,
     ...question.choices.map((choice, index) => el("div", { class: `emoji-choice-row ${scoringEnabled ? "with-correct" : ""}` }, [
-      input(choice.emoji, (value) => updateChoice(question, index, { emoji: value }, onUpdate), { "aria-label": "Emoji", maxlength: "4" }),
-      input(choice.value, (value) => updateChoice(question, index, { value: slugName(value) }, onUpdate), { "aria-label": "Valor" }),
-      input(choice.text, (value) => updateChoice(question, index, { text: value }, onUpdate), { "aria-label": "Texto" }),
+      input(choice.emoji, (value) => updateChoice(question, index, { emoji: value }, onUpdate), { class: "choice-emoji", "aria-label": "Emoji", maxlength: "4" }),
+      input(choice.value, (value) => updateChoice(question, index, { value: slugName(value) }, onUpdate), { class: "choice-value", "aria-label": "Valor", placeholder: "valor_tecnico" }),
+      input(choice.text, (value) => updateChoice(question, index, { text: value }, onUpdate), { class: "choice-text", "aria-label": "Texto", placeholder: "Etiqueta visible" }),
       scoringEnabled ? renderChoiceCorrectnessControl(question, choice, onUpdate, t) : null,
       el("button", {
         class: "icon-button",
@@ -100,8 +112,8 @@ function renderMatrixAxis(title, items, onChange) {
       })
     ]),
     ...items.map((item, index) => el("div", { class: "choice-row" }, [
-      input(item.value, (value) => onChange(updateItem(items, index, { value: slugName(value) })), { "aria-label": "Valor" }),
-      input(item.text, (value) => onChange(updateItem(items, index, { text: value })), { "aria-label": "Texto" }),
+      input(item.value, (value) => onChange(updateItem(items, index, { value: slugName(value) })), { class: "choice-value", "aria-label": "Valor", placeholder: "valor_tecnico" }),
+      input(item.text, (value) => onChange(updateItem(items, index, { text: value })), { class: "choice-text", "aria-label": "Texto", placeholder: "Etiqueta visible" }),
       el("button", {
         class: "icon-button",
         type: "button",
@@ -137,10 +149,10 @@ function renderImageChoices(question, onUpdate, t) {
     ]),
     scoringEnabled ? el("p", { class: "muted choice-help", text: choiceHelpForType(t, question.type) }) : null,
     ...question.choices.map((choice, index) => el("div", { class: `choice-row image-choice-row ${scoringEnabled ? "with-correct" : ""}` }, [
-      input(choice.value, (value) => updateChoice(question, index, { value: slugName(value) }, onUpdate), { "aria-label": "Valor" }),
-      input(choice.text, (value) => updateChoice(question, index, { text: value }, onUpdate), { "aria-label": "Texto" }),
-      input(choice.imageUrl || "", (value) => updateChoice(question, index, { imageUrl: value }, onUpdate), { "aria-label": "URL de imagen", type: "url", placeholder: "https://..." }),
-      input(choice.caption || "", (value) => updateChoice(question, index, { caption: value }, onUpdate), { "aria-label": "Criterio o pie" }),
+      input(choice.value, (value) => updateChoice(question, index, { value: slugName(value) }, onUpdate), { class: "choice-value", "aria-label": "Valor", placeholder: "valor_tecnico" }),
+      input(choice.text, (value) => updateChoice(question, index, { text: value }, onUpdate), { class: "choice-text", "aria-label": "Texto", placeholder: "Etiqueta visible" }),
+      input(choice.imageUrl || "", (value) => updateChoice(question, index, { imageUrl: value }, onUpdate), { class: "choice-image-url", "aria-label": "URL de imagen", type: "url", placeholder: "https://..." }),
+      input(choice.caption || "", (value) => updateChoice(question, index, { caption: value }, onUpdate), { class: "choice-caption", "aria-label": "Criterio o pie", placeholder: "Descripcion breve" }),
       scoringEnabled ? renderChoiceCorrectnessControl(question, choice, onUpdate, t) : null,
       el("button", {
         class: "icon-button",
@@ -173,15 +185,16 @@ function renderPanelEditor(question, onUpdate, t) {
         field("Tipo", select(nestedQuestion.type, QUESTION_TYPES.filter((type) => type.value !== "panel"), (type) => {
           updateNestedQuestion(question, index, { ...createQuestion(type), id: nestedQuestion.id, name: nestedQuestion.name }, onUpdate);
         })),
-        field("Nombre tecnico", input(nestedQuestion.name, (value) => updateNestedQuestion(question, index, { name: slugName(value) }, onUpdate))),
-        field("Titulo", input(nestedQuestion.title, (value) => updateNestedQuestion(question, index, { title: value }, onUpdate))),
+        field("Nombre tecnico", input(nestedQuestion.name, (value) => updateNestedQuestion(question, index, { name: slugName(value) }, onUpdate), { "aria-label": "Nombre tecnico de pregunta anidada" })),
+        field("Titulo", input(nestedQuestion.title, (value) => updateNestedQuestion(question, index, { title: value }, onUpdate), { "aria-label": "Titulo de pregunta anidada" })),
         field("Obligatoria", el("input", {
           type: "checkbox",
           checked: nestedQuestion.required,
+          "aria-label": "Pregunta anidada obligatoria",
           onchange: (event) => updateNestedQuestion(question, index, { required: event.target.checked }, onUpdate)
         }))
       ]),
-      field("Descripcion", textarea(nestedQuestion.description || "", (value) => updateNestedQuestion(question, index, { description: value }, onUpdate), { rows: 2 })),
+      field("Descripcion", textarea(nestedQuestion.description || "", (value) => updateNestedQuestion(question, index, { description: value }, onUpdate), { rows: 2, "aria-label": "Descripcion de pregunta anidada" })),
       renderTypeOptions(nestedQuestion, t, (patch) => updateNestedQuestion(question, index, patch, onUpdate)),
       el("button", {
         class: "button button-danger",
@@ -212,8 +225,8 @@ function renderChoices(question, onUpdate, t) {
     scoringEnabled ? el("p", { class: "muted choice-help", text: choiceHelpForType(t, question.type) }) : null,
     ...question.choices.map((choice, index) => {
       const baseRow = el("div", { class: "choice-row" }, [
-        input(choice.value, (value) => updateChoice(question, index, { value: slugName(value) }, onUpdate), { "aria-label": "Valor" }),
-        input(choice.text, (value) => updateChoice(question, index, { text: value }, onUpdate), { "aria-label": "Texto" }),
+        input(choice.value, (value) => updateChoice(question, index, { value: slugName(value) }, onUpdate), { class: "choice-value", "aria-label": "Valor", placeholder: "valor_tecnico" }),
+        input(choice.text, (value) => updateChoice(question, index, { text: value }, onUpdate), { class: "choice-text", "aria-label": "Texto", placeholder: "Etiqueta visible" }),
         el("button", {
           class: "icon-button",
           type: "button",
@@ -287,6 +300,7 @@ function renderChoiceCorrectnessControl(question, choice, onUpdate, t) {
       type: "number",
       min: "1",
       max: String(question.choices.length),
+      "aria-label": "Orden de opcion en ranking",
       dataset: { builderFocusKey: focusKey }
     }), t("rankingHint", {}, "1 es la primera posicion correcta."));
   }

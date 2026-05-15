@@ -17,6 +17,13 @@ export const builderMessages = {
   questionsInPage: "Preguntas en esta pagina: {count}",
   surveyTitle: "Titulo",
   surveyDescription: "Descripcion",
+  surveyImage: "Imagen de la encuesta",
+  questionTitle: "Titulo de pregunta",
+  questionDescription: "Descripcion de pregunta",
+  questionNameAria: "Nombre tecnico de la pregunta",
+  questionTitleAria: "Titulo de la pregunta",
+  questionDescriptionAria: "Descripcion de la pregunta",
+  questionRequiredAria: "Pregunta obligatoria",
   pageTitle: "Titulo de pagina",
   pageDescription: "Descripcion de pagina",
   type: "Tipo",
@@ -38,11 +45,17 @@ export const builderMessages = {
   min: "Minimo",
   max: "Maximo",
   placeholder: "Placeholder",
+  booleanTrueLabel: "Texto valor verdadero",
+  booleanFalseLabel: "Texto valor falso",
+  booleanTrueLabelAria: "Texto del valor verdadero",
+  booleanFalseLabelAria: "Texto del valor falso",
   rows: "Filas",
   columns: "Columnas",
   scoringSummary: "Puntuacion y correccion",
   visibilitySummary: "Logica de visibilidad",
   scoringToggleLabel: "Marcar esta pregunta como puntuable",
+  scoringEnabled: "Puntuable",
+  scoringDisabled: "Sin puntuacion",
   scoringEmptyInfo: "Activa la puntuacion para guardar score, peso, respuesta correcta y razonamiento.",
   scoringDisabledInfo: "Este tipo es informativo y no se puntua.",
   correctAnswerListHint: "Usa un valor tecnico por linea, en el orden correcto.",
@@ -84,7 +97,11 @@ export const builderMessages = {
   blockBodyHint: "Texto libre: historia, instrucciones, enunciado...",
   sparkle: "Destello",
   waves: "Ondas",
-  orbit: "Orbita"
+  orbit: "Orbita",
+  quickEditOptions: "Opciones rapidas",
+  builderTab: "Constructor",
+  previewTab: "Vista previa",
+  jsonTab: "Editor JSON"
 };
 
 export const builderTypeLabels = {
@@ -103,7 +120,7 @@ export const builderTypeLabels = {
   codeBlock: "Bloque de codigo",
   svgNote: "Bloque visual SVG",
   contentBlock: "Bloque de contenido",
-  boolean: "Si / No"
+  boolean: "Booleana"
 };
 
 export const builderTypeSummaries = {
