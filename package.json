@@ -49,9 +49,9 @@
     },
     "./styles.css": "./dist/styles.css",
     "./styles/plainsurvey.css": "./dist/styles/plainsurvey.css",
-    "./styles/themes.css": "./dist/styles/themes.css",
-    "./styles/skins.css": "./dist/styles/skins.css",
     "./styles/layouts.css": "./dist/styles/layouts.css",
+    "./styles/skins.css": "./dist/styles/skins.css",
+    "./styles/themes.css": "./dist/styles/themes.css",
     "./styles/themes/*.css": "./dist/styles/themes/*.css"
   },
   "files": [
@@ -60,18 +60,17 @@
     "CHANGELOG.md",
     "LICENSE"
   ],
-  "peerDependencies": {
+  "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^1.8.1",
     "@mlc-ai/web-llm": "^0.2.83",
     "jsonrepair": "^3.13.1"
   },
   "devDependencies": {
-    "@atlaskit/pragmatic-drag-and-drop": "^1.8.1",
-    "@mlc-ai/web-llm": "^0.2.83",
-    "jsonrepair": "^3.13.1",
-    "happy-dom": "^20.0.11"
+    "happy-dom": "^20.0.11",
+    "vite": "^5.4.21"
   },
   "scripts": {
+    "dev": "vite",
     "build": "node ./scripts/build.mjs",
     "prepublishOnly": "npm run build",
     "test": "node ./scripts/build.mjs && node --test"

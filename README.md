@@ -53,8 +53,6 @@ Assets CSS publicos:
 
 - `plainsurvey/styles/plainsurvey.css`
 - `plainsurvey/styles/themes.css`
-- `plainsurvey/styles/skins.css`
-- `plainsurvey/styles/layouts.css`
 - `plainsurvey/styles/themes/*.css`
 
 ## Requisitos tecnicos
@@ -73,8 +71,6 @@ npm install plainsurvey
 ```js
 import "plainsurvey/styles/plainsurvey.css";
 import "plainsurvey/styles/themes.css";
-import "plainsurvey/styles/skins.css";
-import "plainsurvey/styles/layouts.css";
 ```
 
 ### Paso 2: define un survey base
@@ -233,7 +229,7 @@ API:
 Recomendacion:
 
 - Importa siempre `plainsurvey.css`.
-- Agrega `themes.css/skins.css/layouts.css` cuando uses capacidades visuales avanzadas.
+- Agrega `themes.css` cuando uses capacidades visuales avanzadas.
 
 ### Analytics (`plainsurvey/analytics`)
 
