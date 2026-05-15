@@ -2,7 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+	ANALYTICS_CONTRACT_VERSION,
   analyzeSurveyResponses,
+	createAnalyticsContract,
+	createQuestionCharts,
   toBarChartData,
   toMatrixHeatmapData,
   toPieChartData,
@@ -68,6 +71,29 @@ test("chart adapters return serializable neutral datasets", () => {
   assert.deepEqual(toMatrixHeatmapData(question(analysis, "matrix")).rows, ["speed", "support"]);
   assert.deepEqual(toRankingChartData(question(analysis, "rank")).datasets[0].data, [1.5, 1.5]);
   assert.doesNotThrow(() => JSON.stringify(analysis));
+});
+
+test("analytics exposes a stable contract and minimal chart samples", () => {
+  const contract = createAnalyticsContract({
+    survey: survey(),
+    responses: [
+      { plan: "pro", rating: 5, matrix: { speed: "high", support: "medium" }, rank: ["analytics", "forms"] },
+      { plan: "free", rating: 3, matrix: { speed: "medium", support: "medium" }, rank: ["forms", "analytics"] }
+    ],
+    chartSampleLimit: 2
+  });
+
+  assert.equal(contract.version, ANALYTICS_CONTRACT_VERSION);
+  assert.equal(contract.responseCount, 2);
+  assert.equal(contract.indexes.byName.plan.name, "plan");
+  assert.deepEqual(contract.indexes.byType.radio, ["plan"]);
+  assert.equal(contract.chartSamples.length, 2);
+  assert.ok(contract.chartSamples[0].charts);
+  assert.doesNotThrow(() => JSON.stringify(contract));
+});
+
+test("createQuestionCharts returns null for unknown summaries", () => {
+  assert.equal(createQuestionCharts(null), null);
 });
 
 function question(analysis, name) {
